@@ -2,11 +2,16 @@ parameters:
   kapitan:
     compile:
       - input_paths:
-          - openshift4-terraform/component/app.jsonnet
-        input_type: jsonnet
-        output_path: apps/
-      - input_paths:
           - openshift4-terraform/component/main.jsonnet
         input_type: jsonnet
+        output_type: json
         output_path: openshift4-terraform/
-
+      - input_paths:
+          - openshift4-terraform/component/gitlab-ci.jsonnet
+        input_type: jsonnet
+        output_type: yml
+        output_path: openshift4-terraform/
+      - input_paths:
+          - openshift4-terraform/component/.gitignore
+        input_type: copy
+        output_path: openshift4-terraform/
