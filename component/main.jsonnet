@@ -4,72 +4,42 @@ local inv = kap.inventory();
 // The hiera parameters for the component
 local params = inv.parameters.openshift4_terraform;
 
-local supported_providers = [
-  'exoscale',
-  'cloudscale',
-];
+local cluster_dns = {
+  cloudscale: '${module.cluster.dns_entries}',
+  exoscale: '${module.cluster.ns_records}',
+};
 
-local terraform_configs = {
-  cloudscale: {
-    'main.tf': {
-      module: {
-        cluster: params.terraform_variables,
-      },
+local terraform_config = {
+  'main.tf': {
+    module: {
+      cluster: params.terraform_variables,
     },
-    'backend.tf': {
-      terraform: {
-        backend: {
-          http: {},
-        },
-      },
-    },
-    'output.tf': {
-      output: {
-        cluster_dns: {
-          value: '${module.cluster.dns_entries}',
-        },
-      },
-    },
-    'variables.tf': {
-      variable: {
-        ignition_bootstrap: {
-          default: '',
-        },
+  },
+  'backend.tf': {
+    terraform: {
+      backend: {
+        http: {},
       },
     },
   },
-  exoscale: {
-    'main.tf': {
-      module: {
-        cluster: params.terraform_variables,
+  'output.tf': {
+    output: {
+      cluster_dns: {
+        value: cluster_dns[params.provider],
       },
     },
-    'backend.tf': {
-      terraform: {
-        backend: {
-          http: {},
-        },
-      },
-    },
-    'output.tf': {
-      output: {
-        cluster_dns: {
-          value: '${module.cluster.ns_records}',
-        },
-      },
-    },
-    'variables.tf': {
-      variable: {
-        ignition_bootstrap: {
-          default: '',
-        },
+  },
+  'variables.tf': {
+    variable: {
+      ignition_bootstrap: {
+        default: '',
       },
     },
   },
 };
 
-if std.member(supported_providers, params.provider) == false then
-  error 'openshift4_terraform.provider "' + params.provider + '" is unsupported. Choose one of ' + supported_providers
+if std.member(std.objectFields(cluster_dns), params.provider) == false then
+  error 'openshift4_terraform.provider "' + params.provider + '" is unsupported. Choose one of ' + std.objectFields(cluster_dns)
 else
   // output
-  terraform_configs[params.provider]
+  terraform_config
