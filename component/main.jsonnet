@@ -4,6 +4,11 @@ local inv = kap.inventory();
 // The hiera parameters for the component
 local params = inv.parameters.openshift4_terraform;
 
+local supported_providers = [
+  'exoscale',
+  'cloudscale',
+];
+
 local terraform_configs = {
   cloudscale: {
     'main.tf': {
@@ -63,8 +68,8 @@ local terraform_configs = {
   },
 };
 
-if params.provider != 'cloudscale' && params.provider != 'exoscale' then
-  error 'openshift4_terraform.provider "' + params.provider + '" is unsupported. Choose one of ["cloudscale", "exoscale"]'
+if std.member(supported_providers, params.provider) == false then
+  error 'openshift4_terraform.provider "' + params.provider + '" is unsupported. Choose one of ' + supported_providers
 else
   // output
   terraform_configs[params.provider]
