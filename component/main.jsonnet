@@ -35,5 +35,8 @@ local terraform_configs = {
   },
 };
 
-// output
-terraform_configs[params.provider]
+if params.provider != 'cloudscale' then
+  error 'openshift4_terraform.provider "' + params.provider + '" is unsupported. Choose one of ["cloudscale"]'
+else
+  // output
+  terraform_configs[params.provider]
