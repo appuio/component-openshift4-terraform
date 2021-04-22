@@ -26,8 +26,7 @@ local GitLabCI() = {
   variables: {
     TF_ROOT: '${CI_PROJECT_DIR}/manifests/openshift4-terraform',
     TF_ADDRESS: '${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/cluster',
-    CLOUDSCALE_TOKEN: '${CLOUDSCALE_TOKEN_RO}',
-  },
+  } + params.gitlab_ci.variables.default,
   validate: {
     stage: 'validate',
     script: [
@@ -48,6 +47,7 @@ local GitLabCI() = {
       'gitlab-terraform plan',
       'gitlab-terraform plan-json',
     ],
+    variables: params.gitlab_ci.variables.plan,
     artifacts: {
       name: 'plan',
       paths: [
@@ -64,9 +64,7 @@ local GitLabCI() = {
     environment: {
       name: 'production',
     },
-    variables: {
-      CLOUDSCALE_TOKEN: '${CLOUDSCALE_TOKEN_RW}',
-    },
+    variables: params.gitlab_ci.variables.apply,
     script: [
       'gitlab-terraform apply',
     ],
