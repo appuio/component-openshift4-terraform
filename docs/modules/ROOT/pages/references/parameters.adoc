@@ -2,18 +2,78 @@
 
 The parent key for all of the following parameters is `openshift4_terraform`.
 
-== `namespace`
+== `provider`
 
 [horizontal]
-type:: string
-default:: `syn-openshift4-terraform`
+type:: enum
+required:: Yes
+values:: `cloudscale`, `exoscale`
 
-The namespace in which to deploy this component.
+The supported cloud provider identifier.
+Supported providers:
 
+- https://github.com/appuio/terraform-openshift4-cloudscale[Cloudscale.ch]
+- https://github.com/appuio/terraform-openshift4-exoscale[Exoscale]
 
-== Example
+=== Example
 
 [source,yaml]
 ----
-namespace: example-namespace
+provider: cloudscale
+----
+
+== `gitlab_ci.tags`
+
+[horizontal]
+type:: array
+default:: `[]`
+
+The GitLab CI Runner tags to apply to the GitLab jobs.
+
+=== Example
+
+[source,yaml]
+----
+gitlab_ci:
+  tags:
+    - docker
+----
+
+== `terraform_variables`
+
+[horizontal]
+type:: object
+default:: see `class/defaults.yml`
+
+The terraform variables as they're passed through 1:1.
+The variables are merged with the defaults, unless overridden.
+
+=== Example
+
+[source,yaml]
+----
+terraform_variables:
+  worker_count: 3
+  infra_flavor: plus-24
+  base_domain: ${openshift:baseDomain}
+  ssh_keys:
+    - ssh-ed25519 AA...
+  ignition_ca: |-
+    -----BEGIN CERTIFICATE-----
+    ...
+----
+
+== `version`
+
+[horizontal]
+type:: string
+default:: `master`
+
+The git revision of the supported cloud provider's terraform repository.
+
+=== Example
+
+[source,yaml]
+----
+version: master
 ----

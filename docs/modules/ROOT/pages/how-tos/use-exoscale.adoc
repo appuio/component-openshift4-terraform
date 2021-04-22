@@ -1,0 +1,32 @@
+= Use Exoscale
+
+The following steps show how to set up Terraform with Exoscale.
+
+. Set up 2 new API keys in https://portal.exoscale.ch[portal.exoscale.ch].
+  One is for read-only access, the other for mutating operations.
+. Configure component parameters.
++
+[source,yaml]
+----
+openshift4_terraform:
+  provider: exoscale
+  terraform_variables:
+    worker_count: 3
+    rhcos_template: TheTemplateNameForRHCOS
+    lb_exoscale_api_key: KeyForLoadBalancersToManageEIP
+    lb_exoscale_api_secret: Secret
+    worker_size: Extra-large
+    base_domain: ${openshift:baseDomain}
+    ignition_ca: |-
+      -----BEGIN CERTIFICATE-----
+      ...
+----
+
+. Compile the cluster catalog
+. Configure GitLab repository
+  - *CI/CD*: Configuration file: `manifests/openshift4-terraform/gitlab-ci.yml`
+  - *CI/CD*: Variables:
+  `EXOSCALE_API_SECRET_RO`,
+  `EXOSCALE_API_KEY_RO`,
+  `EXOSCALE_API_SECRET_RW`,
+  `EXOSCALE_API_KEY_RW`,

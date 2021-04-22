@@ -1,0 +1,27 @@
+= Use Cloudscale.ch
+
+The following steps show how to set up Terraform with cloudscale.ch.
+
+. Set up 2 new API keys in https://control.cloudscale.ch[control.cloudscale.ch].
+  One is for read-only access, the other for mutating operations.
+. Configure component parameters.
++
+[source,yaml]
+----
+openshift4_terraform:
+  provider: cloudscale
+  terraform_variables:
+    worker_count: 3
+    infra_flavor: plus-24
+    base_domain: ${openshift:baseDomain}
+    ignition_ca: |-
+      -----BEGIN CERTIFICATE-----
+      ...
+----
+
+. Compile the cluster catalog
+. Configure GitLab repository
+  - *CI/CD*: Configuration file: `manifests/openshift4-terraform/gitlab-ci.yml`
+  - *CI/CD*: Variables:
+  `CLOUDSCALE_TOKEN_RO`,
+  `CLOUDSCALE_TOKEN_RW`
