@@ -6,8 +6,8 @@ parameters:
         tag: v0.2.4
     gitlab_ci:
       tags: []
-    # Mandatory. Supported providers are ["cloudscale"]
-    provider: "cloudscale"
+    # Mandatory. Supported providers are ["cloudscale", "exoscale"]
+    provider: "exoscale"
     version: master
     terraform_variables:
       source: github.com/appuio/terraform-openshift4-${openshift4_terraform:provider}?ref=${openshift4_terraform:version}

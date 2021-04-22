@@ -11,6 +11,16 @@ local cloud_specific_variables = {
       CLOUDSCALE_TOKEN: '${CLOUDSCALE_TOKEN_RW}',
     },
   },
+  exoscale: {
+    default: {
+      EXOSCALE_API_KEY: '${EXOSCALE_API_KEY_RO}',
+      EXOSCALE_API_SECRET: '${EXOSCALE_API_SECRET_RO}',
+    },
+    apply: {
+      EXOSCALE_API_KEY: '${EXOSCALE_API_KEY_RW}',
+      EXOSCALE_API_SECRET: '${EXOSCALE_API_SECRET_RW}',
+    },
+  },
 };
 
 local GitLabCI() = {

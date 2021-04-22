@@ -33,10 +33,38 @@ local terraform_configs = {
       },
     },
   },
+  exoscale: {
+    'main.tf': {
+      module: {
+        cluster: params.terraform_variables,
+      },
+    },
+    'backend.tf': {
+      terraform: {
+        backend: {
+          http: {},
+        },
+      },
+    },
+    'output.tf': {
+      output: {
+        cluster_dns: {
+          value: '${module.cluster.ns_records}',
+        },
+      },
+    },
+    'variables.tf': {
+      variable: {
+        ignition_bootstrap: {
+          default: '',
+        },
+      },
+    },
+  },
 };
 
-if params.provider != 'cloudscale' then
-  error 'openshift4_terraform.provider "' + params.provider + '" is unsupported. Choose one of ["cloudscale"]'
+if params.provider != 'cloudscale' && params.provider != 'exoscale' then
+  error 'openshift4_terraform.provider "' + params.provider + '" is unsupported. Choose one of ["cloudscale", "exoscale"]'
 else
   // output
   terraform_configs[params.provider]
