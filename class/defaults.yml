@@ -6,13 +6,8 @@ parameters:
         tag: v0.2.4
     gitlab_ci:
       tags: []
-      variables:
-        plan: {}
-        apply:
-          CLOUDSCALE_TOKEN: \${CLOUDSCALE_TOKEN_RW}
-        default:
-          CLOUDSCALE_TOKEN: \${CLOUDSCALE_TOKEN_RO}
-    provider: cloudscale
+    # Mandatory. Supported providers are ["cloudscale"]
+    provider: "cloudscale"
     version: master
     terraform_variables:
       source: github.com/appuio/terraform-openshift4-${openshift4_terraform:provider}?ref=${openshift4_terraform:version}

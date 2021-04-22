@@ -2,6 +2,17 @@ local kap = import 'lib/kapitan.libjsonnet';
 local inv = kap.inventory();
 local params = inv.parameters.openshift4_terraform;
 
+local cloud_specific_variables = {
+  cloudscale: {
+    default: {
+      CLOUDSCALE_TOKEN: '${CLOUDSCALE_TOKEN_RO}',
+    },
+    apply: {
+      CLOUDSCALE_TOKEN: '${CLOUDSCALE_TOKEN_RW}',
+    },
+  },
+};
+
 local GitLabCI() = {
   stages: [
     'validate',
@@ -26,7 +37,7 @@ local GitLabCI() = {
   variables: {
     TF_ROOT: '${CI_PROJECT_DIR}/manifests/openshift4-terraform',
     TF_ADDRESS: '${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/cluster',
-  } + params.gitlab_ci.variables.default,
+  } + cloud_specific_variables[params.provider].default,
   validate: {
     stage: 'validate',
     script: [
@@ -47,7 +58,6 @@ local GitLabCI() = {
       'gitlab-terraform plan',
       'gitlab-terraform plan-json',
     ],
-    variables: params.gitlab_ci.variables.plan,
     artifacts: {
       name: 'plan',
       paths: [
@@ -64,7 +74,7 @@ local GitLabCI() = {
     environment: {
       name: 'production',
     },
-    variables: params.gitlab_ci.variables.apply,
+    variables: cloud_specific_variables[params.provider].apply,
     script: [
       'gitlab-terraform apply',
     ],
