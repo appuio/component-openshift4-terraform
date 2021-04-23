@@ -43,6 +43,7 @@ test-cloudscale: .test
 
 .PHONY: test-exoscale
 test-exoscale: testfile = exoscale.yaml
+test-exoscale: extra_args = -e TF_VAR_lb_exoscale_api_key=ApiKeyForLoadBalancer -e TF_VAR_lb_exoscale_api_secret=ApiSecretForLoadBalancer
 test-exoscale: .test
 
 .PHONY: .test

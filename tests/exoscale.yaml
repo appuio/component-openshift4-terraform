@@ -10,8 +10,6 @@ parameters:
       region: ${cloud:region}
       base_domain: exoscale.ch
       ignition_ca: SomeCertificateString
-      lb_exoscale_api_key: ApiKeyForLoadBalancer
-      lb_exoscale_api_secret: ApiSecretForLoadBalancer
       rhcos_template: my-iso-image
       ssh_key: ssh-ed25519 AA...
       bootstrap_bucket: https://sos-${cloud:region}.exo.io/${cluster:name}-bootstrap
