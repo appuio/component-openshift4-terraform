@@ -20,6 +20,8 @@ openshift4_terraform:
     ignition_ca: |-
       -----BEGIN CERTIFICATE-----
       ...
+    ssh_key: ssh-ed25519 AA...
+    bootstrap_bucket: my-bucket
 ----
 
 . Compile the cluster catalog

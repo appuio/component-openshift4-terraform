@@ -5,3 +5,4 @@ helmcharts/
 manifests/
 vendor/
 jsonnetfile.lock.json
+compiled/

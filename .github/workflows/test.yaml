@@ -1,26 +1,21 @@
-name: Pull Request
+name: Test
 on:
   pull_request:
     branches:
       - master
+  schedule:
+    # Run regularly so we know if some upstream dependencies break.
+    - cron: '0 12 * * 1-5'
 
 jobs:
-  linting:
+  compile:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         command:
-          - lint_jsonnet
-          - lint_yaml
-          - docs-vale
+          - test-cloudscale
+          - test-exoscale
     steps:
       - uses: actions/checkout@v2
       - name: Run ${{ matrix.command }}
         run: make ${{ matrix.command }}
-  editorconfig:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: snow-actions/eclint@v1.0.1
-        with:
-          args: 'check'
