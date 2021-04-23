@@ -2,6 +2,11 @@ local kap = import 'lib/kapitan.libjsonnet';
 local inv = kap.inventory();
 local params = inv.parameters.openshift4_terraform;
 
+local ursula_vars_exoscale = {
+  TF_VAR_lb_exoscale_api_key: '${EXOSCALE_URSULA_KEY}',
+  TF_VAR_lb_exoscale_api_secret: '${EXOSCALE_URSULA_SECRET}',
+};
+
 local cloud_specific_variables = {
   cloudscale: {
     default: {
@@ -15,11 +20,11 @@ local cloud_specific_variables = {
     default: {
       EXOSCALE_API_KEY: '${EXOSCALE_API_KEY_RO}',
       EXOSCALE_API_SECRET: '${EXOSCALE_API_SECRET_RO}',
-    },
+    } + ursula_vars_exoscale,
     apply: {
       EXOSCALE_API_KEY: '${EXOSCALE_API_KEY_RW}',
       EXOSCALE_API_SECRET: '${EXOSCALE_API_SECRET_RW}',
-    },
+    } + ursula_vars_exoscale,
   },
 };
 
