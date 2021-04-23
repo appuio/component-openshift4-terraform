@@ -4,5 +4,5 @@ _public/
 helmcharts/
 manifests/
 vendor/
-jsonnetfile.lock.json
+jsonnetfile*.json
 compiled/
