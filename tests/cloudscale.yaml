@@ -10,4 +10,3 @@ parameters:
       region: ${cloud:region}
       base_domain: cloudscale.ch
       ignition_ca: SomeCertificateString
-      ignition_bootstrap: \${var.ignition_bootstrap}
