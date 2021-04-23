@@ -39,7 +39,7 @@ local terraform_config = {
 };
 
 if std.member(std.objectFields(cluster_dns), params.provider) == false then
-  error 'openshift4_terraform.provider "' + params.provider + '" is unsupported. Choose one of ' + std.objectFields(cluster_dns)
+  error 'openshift4_terraform.provider "' + params.provider + '" is not supported by this component. Currently supported are ' + std.objectFields(cluster_dns) + '. If you think this is a bug in the component, file an issue on https://github.com/appuio/component-openshift4-terraform.'
 else
   // output
   terraform_config

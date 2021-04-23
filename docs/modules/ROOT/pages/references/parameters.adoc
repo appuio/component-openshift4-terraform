@@ -9,18 +9,11 @@ type:: enum
 required:: Yes
 values:: `cloudscale`, `exoscale`
 
-The supported cloud provider identifier.
-Supported providers:
+This variable is used to select the Terraform module and a suitable default configuration for the specified cloud provider.
+The supported providers are:
 
-- https://github.com/appuio/terraform-openshift4-cloudscale[Cloudscale.ch]
-- https://github.com/appuio/terraform-openshift4-exoscale[Exoscale]
-
-=== Example
-
-[source,yaml]
-----
-provider: cloudscale
-----
+- https://cloudscale.ch[Cloudscale.ch] -- https://github.com/appuio/terraform-openshift4-cloudscale[Terraform module]
+- https://exoscale.com[Exoscale] -- https://github.com/appuio/terraform-openshift4-exoscale[Terraform module]
 
 == `gitlab_ci.tags`
 
@@ -30,14 +23,21 @@ default:: `[]`
 
 The GitLab CI Runner tags to apply to the GitLab jobs.
 
-=== Example
+== `images.terraform.image`
 
-[source,yaml]
-----
-gitlab_ci:
-  tags:
-    - docker
-----
+[horizontal]
+type:: string
+default:: `registry.gitlab.com/gitlab-org/terraform-images/releases/0.14`
+
+This is the image repository that's used in the generated GitLab CI configuration for automated pipelines.
+
+== `images.terraform.tag`
+
+[horizontal]
+type:: string
+default:: `v0.10.0`
+
+This is the corresponding image tag for `images.terraform.image`
 
 == `terraform_variables`
 
@@ -45,23 +45,9 @@ gitlab_ci:
 type:: object
 default:: see `class/defaults.yml`
 
-The terraform variables as they're passed through 1:1.
+Terraform input variables for the selected Terraform module (see parameter `provider`).
+They're passed to the module without any further processing.
 The variables are merged with the defaults, unless overridden.
-
-=== Example
-
-[source,yaml]
-----
-terraform_variables:
-  worker_count: 3
-  infra_flavor: plus-24
-  base_domain: ${openshift:baseDomain}
-  ssh_keys:
-    - ssh-ed25519 AA...
-  ignition_ca: |-
-    -----BEGIN CERTIFICATE-----
-    ...
-----
 
 == `version`
 
@@ -69,11 +55,11 @@ terraform_variables:
 type:: string
 default:: `master`
 
-The git revision of the supported cloud provider's terraform repository.
+The git revision of the selected Terraform module (see parameter `provider`)
 
-=== Example
+== Example
 
-[source,yaml]
-----
-version: master
-----
+See examples in the how-to pages:
+
+* xref:how-tos/use-cloudscale.adoc[Cloudscale.ch example]
+* xref:how-tos/use-exoscale.adoc[Exoscale example]
