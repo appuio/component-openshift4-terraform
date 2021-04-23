@@ -14,4 +14,4 @@ parameters:
       lb_exoscale_api_secret: ApiSecretForLoadBalancer
       rhcos_template: my-iso-image
       ssh_key: ssh-ed25519 AA...
-      bootstrap_bucket: my-bucket
+      bootstrap_bucket: https://sos-${cloud:region}.exo.io/${cluster:name}-bootstrap

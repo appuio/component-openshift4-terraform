@@ -8,6 +8,6 @@ parameters:
       source: github.com/appuio/terraform-openshift4-${openshift4_terraform:provider}?ref=${openshift4_terraform:version}
       cluster_id: ${cluster:name}
       region: ${cloud:region}
-      ignition_bootstrap: \${var.ignition_bootstrap}
       base_domain: cloudscale.ch
       ignition_ca: SomeCertificateString
+      ignition_bootstrap: \${var.ignition_bootstrap}

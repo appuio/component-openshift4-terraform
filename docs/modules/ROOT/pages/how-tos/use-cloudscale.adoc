@@ -11,13 +11,16 @@ The following steps show how to set up Terraform with cloudscale.ch.
 openshift4_terraform:
   provider: cloudscale
   terraform_variables:
-    worker_count: 3                                # optional
-    infra_flavor: plus-24
+    # Required parameters
     base_domain: ${openshift:baseDomain}
     ignition_bootstrap: \${var.ignition_bootstrap}
     ignition_ca: |-
       -----BEGIN CERTIFICATE-----
       ...
+
+    # Optional parameters:
+    worker_count: 3
+    infra_flavor: plus-24
 ----
 
 . Compile the cluster catalog
