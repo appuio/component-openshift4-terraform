@@ -13,7 +13,6 @@ openshift4_terraform:
   terraform_variables:
     # Required parameters
     base_domain: ${openshift:baseDomain}
-    ignition_bootstrap: \${var.ignition_bootstrap}
     ignition_ca: |-
       -----BEGIN CERTIFICATE-----
       ...
