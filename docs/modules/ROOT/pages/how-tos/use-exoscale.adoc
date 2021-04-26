@@ -1,0 +1,47 @@
+= Use Exoscale
+
+The following steps show how to set up Terraform with Exoscale.
+
+. Set up 3 new API keys in https://portal.exoscale.com[portal.exoscale.com].
+  Two of them are used for the Terraform pipeline.
+  The first key should be created with restricted (compute > `get*`, `list*`, `query*`, `show*` and `validate*`; DNS > `list*` and `get*`) permissions
+  The second key can be created as `unrestricted`.
+  The third key needs the following permissions (this key will be deployed onto the LBs for https://git.vshn.net/appuio-public/ursula[Ursula]):
+  - compute:
+    * `addIpToNic`
+    * `listNics`
+    * `listResourceDetails`
+    * `listVirtualMachines`
+    * `queryAsyncJobResult`
+    * `removeIpFromNic`
+. Configure component parameters.
++
+[source,yaml]
+----
+openshift4_terraform:
+  provider: exoscale
+  terraform_variables:
+    # Required parameters
+    rhcos_template: TheTemplateNameForRHCOS
+    base_domain: ${openshift:baseDomain}
+    ignition_ca: |-
+      -----BEGIN CERTIFICATE-----
+      ...
+    ssh_key: ssh-ed25519 AA...
+    bootstrap_bucket: https://sos-${cloud:region}.exo.io/${cluster:name}-bootstrap
+
+    # Optional parameters:
+    worker_count: 3
+    worker_size: Extra-large
+----
+
+. Compile the cluster catalog
+. Configure GitLab repository
+  - *CI/CD*: Configuration file: `manifests/openshift4-terraform/gitlab-ci.yml`
+  - *CI/CD*: Variables:
+    * `EXOSCALE_API_SECRET_RO`
+    * `EXOSCALE_API_KEY_RO`
+    * `EXOSCALE_API_SECRET_RW`
+    * `EXOSCALE_API_KEY_RW`
+    * `EXOSCALE_URSULA_KEY`
+    * `EXOSCALE_URSULA_SECRET`

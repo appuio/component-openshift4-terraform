@@ -2,18 +2,64 @@
 
 The parent key for all of the following parameters is `openshift4_terraform`.
 
-== `namespace`
+== `provider`
+
+[horizontal]
+type:: enum
+required:: Yes
+values:: `cloudscale`, `exoscale`
+
+This variable is used to select the Terraform module and a suitable default configuration for the specified cloud provider.
+The supported providers are:
+
+- https://cloudscale.ch[Cloudscale.ch] -- https://github.com/appuio/terraform-openshift4-cloudscale[Terraform module]
+- https://exoscale.com[Exoscale] -- https://github.com/appuio/terraform-openshift4-exoscale[Terraform module]
+
+== `gitlab_ci.tags`
+
+[horizontal]
+type:: array
+default:: `[]`
+
+The GitLab CI Runner tags to apply to the GitLab jobs.
+
+== `images.terraform.image`
 
 [horizontal]
 type:: string
-default:: `syn-openshift4-terraform`
+default:: `registry.gitlab.com/gitlab-org/terraform-images/releases/0.14`
 
-The namespace in which to deploy this component.
+This is the image repository that's used in the generated GitLab CI configuration for automated pipelines.
 
+== `images.terraform.tag`
+
+[horizontal]
+type:: string
+default:: `v0.10.0`
+
+This is the corresponding image tag for `images.terraform.image`
+
+== `terraform_variables`
+
+[horizontal]
+type:: object
+default:: see `class/defaults.yml`
+
+Terraform input variables for the selected Terraform module (see parameter `provider`).
+They're passed to the module without any further processing.
+The variables are merged with the defaults, unless overridden.
+
+== `version`
+
+[horizontal]
+type:: string
+default:: `master`
+
+The git revision of the selected Terraform module (see parameter `provider`)
 
 == Example
 
-[source,yaml]
-----
-namespace: example-namespace
-----
+See examples in the how-to pages:
+
+* xref:how-tos/use-cloudscale.adoc[Cloudscale.ch example]
+* xref:how-tos/use-exoscale.adoc[Exoscale example]

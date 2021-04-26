@@ -1,15 +1,15 @@
 parameters:
   openshift4_terraform:
-    images:
-      terraform:
-        # Don't forget to update the image also in the documentation
-        image: registry.gitlab.com/gitlab-org/terraform-images/releases/0.14
-        tag: v0.10.0
     gitlab_ci:
-      tags: []
-    provider: ""
+      tags: ["mytag"]
+    provider: exoscale
     version: master
     terraform_variables:
       source: github.com/appuio/terraform-openshift4-${openshift4_terraform:provider}?ref=${openshift4_terraform:version}
       cluster_id: ${cluster:name}
       region: ${cloud:region}
+      base_domain: exoscale.ch
+      ignition_ca: SomeCertificateString
+      rhcos_template: my-iso-image
+      ssh_key: ssh-ed25519 AA...
+      bootstrap_bucket: https://sos-${cloud:region}.exo.io/${cluster:name}-bootstrap
