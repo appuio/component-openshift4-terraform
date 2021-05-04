@@ -30,7 +30,7 @@ local input_vars = {
 // This bit of code requires that the input variables are named identically
 // to the cluster module input variables.
 local provider_module_vars = {
-  [var]: '\\${var.%s}' % var
+  [var]: '${var.%s}' % var
   for var in std.objectFields(input_vars[params.provider])
 };
 
