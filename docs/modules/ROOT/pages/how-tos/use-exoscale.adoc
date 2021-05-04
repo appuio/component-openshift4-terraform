@@ -28,7 +28,7 @@ openshift4_terraform:
       -----BEGIN CERTIFICATE-----
       ...
     ssh_key: ssh-ed25519 AA...
-    bootstrap_bucket: https://sos-${cloud:region}.exo.io/${cluster:name}-bootstrap
+    bootstrap_bucket: https://sos-${facts:region}.exo.io/${cluster:name}-bootstrap
 
     # Optional parameters:
     worker_count: 3
