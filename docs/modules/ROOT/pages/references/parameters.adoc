@@ -8,6 +8,7 @@ The parent key for all of the following parameters is `openshift4_terraform`.
 type:: enum
 required:: Yes
 values:: `cloudscale`, `exoscale`
+default:: `${facts:provider}`
 
 This variable is used to select the Terraform module and a suitable default configuration for the specified cloud provider.
 The supported providers are:
