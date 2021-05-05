@@ -7,7 +7,7 @@ parameters:
         tag: v0.10.0
     gitlab_ci:
       tags: []
-    provider: ""
+    provider: ${facts:cloud}
     version: master
     terraform_variables:
       source: github.com/appuio/terraform-openshift4-${openshift4_terraform:provider}?ref=${openshift4_terraform:version}
