@@ -22,6 +22,9 @@ local input_vars = {
     lb_exoscale_api_secret: {
       default: '',
     },
+    bootstrap_bucket: {
+      default: '',
+    },
   },
 };
 
