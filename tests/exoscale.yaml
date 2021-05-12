@@ -1,13 +1,13 @@
 parameters:
+  # Provide fake facts for Exoscale/CH-DK-2
+  facts:
+    cloud: exoscale
+    region: ch-dk-2
   openshift4_terraform:
     gitlab_ci:
       tags: ["mytag"]
-    provider: exoscale
     version: master
     terraform_variables:
-      source: git::https://github.com/appuio/terraform-openshift4-${openshift4_terraform:provider}//?ref=${openshift4_terraform:version}
-      cluster_id: ${cluster:name}
-      region: ${facts:region}
       base_domain: exoscale.ch
       ignition_ca: SomeCertificateString
       rhcos_template: my-iso-image
