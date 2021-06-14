@@ -55,7 +55,7 @@ test-exoscale: .test ## Run tests for exoscale provider
 	rm compiled/$(COMPONENT_NAME)/$(COMPONENT_NAME)/backend.tf.json # either this, or make backend configurable
 	$(TERRAFORM_CMD) gitlab-terraform init
 	$(TERRAFORM_CMD) gitlab-terraform validate
-	$(GITLABCI_LINT_CMD)
+	$(YAMLLINT_DOCKER) -f parsable -c $(YAMLLINT_CONFIG) $(YAMLLINT_ARGS) -- $(compiled_path)/gitlab-ci.yml
 
 .PHONY: clean
 clean: ## Clean the project
