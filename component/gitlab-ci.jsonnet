@@ -101,5 +101,5 @@ local GitLabCI() = {
 };
 
 {
-  'gitlab-ci': GitLabCI(),
+  '.gitlab-ci': GitLabCI(),
 }
