@@ -23,6 +23,9 @@ local input_vars = {
     lb_exoscale_api_secret: {
       default: '',
     },
+    control_vshn_net_token: {
+      default: '',
+    },
   },
 };
 
