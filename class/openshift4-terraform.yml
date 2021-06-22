@@ -13,5 +13,8 @@ parameters:
         output_path: openshift4-terraform/
       - input_paths:
           - openshift4-terraform/component/.gitignore
+          - openshift4-terraform/scripts/terraform.sh
+          - openshift4-terraform/scripts/tf.sh
+          - openshift4-terraform/scripts/git-askpass.sh
         input_type: copy
         output_path: openshift4-terraform/
