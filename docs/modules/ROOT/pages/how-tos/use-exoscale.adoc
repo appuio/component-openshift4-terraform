@@ -6,7 +6,7 @@ The following steps show how to set up Terraform with Exoscale.
   Two of them are used for the Terraform pipeline.
   The first key should be created with restricted (compute > `get*`, `list*`, `query*`, `show*` and `validate*`; DNS > `list*` and `get*`) permissions
   The second key can be created as `unrestricted`.
-  The third key needs the following permissions (this key will be deployed onto the LBs for https://git.vshn.net/appuio-public/ursula[Ursula]):
+  The third key needs the following permissions (this key will be deployed onto the LBs for https://github.com/vshn/floaty[Floaty]):
   - compute:
     * `addIpToNic`
     * `listNics`
@@ -43,5 +43,5 @@ openshift4_terraform:
     * `EXOSCALE_API_KEY_RO`
     * `EXOSCALE_API_SECRET_RW`
     * `EXOSCALE_API_KEY_RW`
-    * `EXOSCALE_URSULA_KEY`
-    * `EXOSCALE_URSULA_SECRET`
+    * `EXOSCALE_FLOATY_KEY`
+    * `EXOSCALE_FLOATY_SECRET`
