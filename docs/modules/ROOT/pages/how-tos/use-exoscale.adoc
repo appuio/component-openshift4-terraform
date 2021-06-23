@@ -1,25 +1,66 @@
 = Use Exoscale
 
+IMPORTANT: Currently the Terraform module which this component uses for Exoscale only supports provisioning VSHN-managed OCP4 clusters on Exoscale.
+
+NOTE: See https://kb.vshn.ch/oc4/how-tos/exoscale/install.html[the Exoscale installation how-to] for a comprehensive how-to for setting up OCP4 on Exoscale.
+
 The following steps show how to set up Terraform with Exoscale.
 
+NOTE: The component currently assumes that the Git repositories live on a GitLab instance.
+
+== Setup credentials
+
 . Set up 3 new API keys in https://portal.exoscale.com[portal.exoscale.com].
-  Two of them are used for the Terraform pipeline.
-  The first key should be created with restricted (compute > `get*`, `list*`, `query*`, `show*` and `validate*`; DNS > `list*` and `get*`) permissions
-  The second key can be created as `unrestricted`.
-  The third key needs the following permissions (this key will be deployed onto the LBs for https://github.com/vshn/floaty[Floaty]):
-  - compute:
-    * `addIpToNic`
-    * `listNics`
-    * `listResourceDetails`
-    * `listVirtualMachines`
-    * `queryAsyncJobResult`
-    * `removeIpFromNic`
-. Configure component parameters.
+Two of them are used for the Terraform pipeline.
+.. The first key should be created with restricted permissions:
++
+- compute
+  * `get*`
+  * `list*`
+  * `query*`
+  * `show*`
+  * `validate*`
+- DNS
+  * `list*`
+  * `get*`
+.. The second key can be created as `unrestricted`.
+.. The third key needs the following permissions (this key will be deployed onto the LBs for https://github.com/vshn/floaty[Floaty]):
++
+- compute:
+  * `addIpToNic`
+  * `listNics`
+  * `listResourceDetails`
+  * `listVirtualMachines`
+  * `queryAsyncJobResult`
+  * `removeIpFromNic`
+
+. Create a "Project Access Token" for the hieradata repository.
+  The token requires the following permissions:
+  - `api`
+  - `read_repository`
+  - `write_repository`
+
++
+The user which is created will be named `project_<project-id>_bot`, where `<project-id>` is the project ID of the GitLab project.
+If the project already has access tokens the user will be named `project_<project-id>_bot<N>` instead, where `N` is a running counter (`1` for the second token, etc.)
+
+. Set up a "Servers API" token on https://control.vshn.net/tokens/_create/servers[control.vshn.net].
+
+. If there's no access token configured on the https://git.vshn.net/appuio/appuio_hieradata/-/settings/access_tokens[APPUiO hieradata repo], create one.
+Otherwise check https://vault-prod.syn.vshn.net/ui/vault/secrets/clusters%2Fkv/show/lbaas/hieradata_repo_token[Vault] for the token.
+
+== Setup component
+
+. Configure component parameters
 +
 [source,yaml]
 ----
 openshift4_terraform:
   provider: exoscale
+  gitlab_ci:
+    git: <1>
+      username: Max Mustermann
+      email: mm@example.com
   terraform_variables:
     # Required parameters
     rhcos_template: TheTemplateNameForRHCOS
@@ -29,19 +70,28 @@ openshift4_terraform:
       ...
     ssh_key: ssh-ed25519 AA...
     bootstrap_bucket: https://sos-${facts:region}.exo.io/${cluster:name}-bootstrap
+    hieradata_repo_user: project_123_bot <2>
 
     # Optional parameters:
     worker_count: 3
     worker_size: Extra-large
 ----
+<1> The Git author name and email address.
+Used when creating hieradata commits.
+If not specified, the GitLab CI defaults will be used.
+<2> The user created for the hieradata project access token.
+Please note that the Terraform module currently only supports the https://git.vshn.net/appuio/appuio_hieradata[VSHN APPUiO hieradata]
 
 . Compile the cluster catalog
-. Configure GitLab repository
-  - *CI/CD*: Configuration file: `manifests/openshift4-terraform/gitlab-ci.yml`
-  - *CI/CD*: Variables:
+. Configure the cluster catalog GitLab repository CI/CD
+  - "Settings > CI/CD > General pipelines > Configuration file" +
+    `manifests/openshift4-terraform/gitlab-ci.yml`
+  - "Settings > CI/CD > Variables"
     * `EXOSCALE_API_SECRET_RO`
     * `EXOSCALE_API_KEY_RO`
     * `EXOSCALE_API_SECRET_RW`
     * `EXOSCALE_API_KEY_RW`
     * `EXOSCALE_FLOATY_KEY`
     * `EXOSCALE_FLOATY_SECRET`
+    * `HIERADATA_REPO_TOKEN` -- the VSHN APPUiO hieradata project access token
+    * `CONTROL_VSHN_NET_TOKEN` --
