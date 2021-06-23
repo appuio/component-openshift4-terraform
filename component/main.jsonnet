@@ -9,6 +9,7 @@ local cluster_dns = {
   exoscale: '${module.cluster.ns_records}',
 };
 
+// Configure Terraform input variables which are provided at runtime
 local input_vars = {
   cloudscale: {
     ignition_bootstrap: {
@@ -58,14 +59,12 @@ local terraform_config =
         },
       },
     },
-  } +
-  {
-    ['variable_%s.tf' % var]: {
+    'variables.tf': {
       variable: {
-        [var]: input_vars[params.provider][var],
+        [var]: input_vars[params.provider][var]
+        for var in std.objectFields(input_vars[params.provider])
       },
-    }
-    for var in std.objectFields(input_vars[params.provider])
+    },
   };
 
 if std.member(std.objectFields(cluster_dns), params.provider) == false then
