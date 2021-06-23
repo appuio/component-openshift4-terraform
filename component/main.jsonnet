@@ -29,6 +29,17 @@ local input_vars = {
   },
 };
 
+// Configure Terraform outputs
+local common_outputs = {
+  cluster_dns: cluster_dns[params.provider],
+};
+local outputs = {
+  cloudscale: common_outputs,
+  exoscale: common_outputs {
+    hieradata_mr: '${module.cluster.hieradata_mr}',
+  },
+};
+
 // We want to pass through any provider-specific input variables (see above)
 // to the cluster module.
 // This bit of code requires that the input variables are named identically
@@ -55,11 +66,12 @@ local terraform_config =
         },
       },
     },
-    'output.tf': {
+    'outputs.tf': {
       output: {
-        cluster_dns: {
-          value: cluster_dns[params.provider],
-        },
+        [out]: {
+          value: outputs[params.provider][out],
+        }
+        for out in std.objectFields(outputs[params.provider])
       },
     },
     'variables.tf': {
