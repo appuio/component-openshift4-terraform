@@ -9,6 +9,7 @@ local cluster_dns = {
   exoscale: '${module.cluster.ns_records}',
 };
 
+// Configure Terraform input variables which are provided at runtime
 local input_vars = {
   cloudscale: {
     ignition_bootstrap: {
@@ -22,6 +23,20 @@ local input_vars = {
     lb_exoscale_api_secret: {
       default: '',
     },
+    control_vshn_net_token: {
+      default: '',
+    },
+  },
+};
+
+// Configure Terraform outputs
+local common_outputs = {
+  cluster_dns: cluster_dns[params.provider],
+};
+local outputs = {
+  cloudscale: common_outputs,
+  exoscale: common_outputs {
+    hieradata_mr: '${module.cluster.hieradata_mr}',
   },
 };
 
@@ -51,21 +66,20 @@ local terraform_config =
         },
       },
     },
-    'output.tf': {
+    'outputs.tf': {
       output: {
-        cluster_dns: {
-          value: cluster_dns[params.provider],
-        },
+        [out]: {
+          value: outputs[params.provider][out],
+        }
+        for out in std.objectFields(outputs[params.provider])
       },
     },
-  } +
-  {
-    ['variable_%s.tf' % var]: {
+    'variables.tf': {
       variable: {
-        [var]: input_vars[params.provider][var],
+        [var]: input_vars[params.provider][var]
+        for var in std.objectFields(input_vars[params.provider])
       },
-    }
-    for var in std.objectFields(input_vars[params.provider])
+    },
   };
 
 if std.member(std.objectFields(cluster_dns), params.provider) == false then
