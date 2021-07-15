@@ -1,0 +1,15 @@
+
+. Create a "Project Access Token" for the hieradata repository.
+  The token requires the following permissions:
+  - `api`
+  - `read_repository`
+  - `write_repository`
+
++
+The user which is created will be named `project_<project-id>_bot`, where `<project-id>` is the project ID of the GitLab project.
+If the project already has access tokens the user will be named `project_<project-id>_bot<N>` instead, where `N` is a running counter (`1` for the second token, etc.)
+
+. Set up a "Servers API" token on https://control.vshn.net/tokens/_create/servers[control.vshn.net].
+
+. If there's no access token configured on the https://git.vshn.net/appuio/appuio_hieradata/-/settings/access_tokens[APPUiO hieradata repo], create one.
+Otherwise check https://vault-prod.syn.vshn.net/ui/vault/secrets/clusters%2Fkv/show/lbaas/hieradata_repo_token[Vault] for the token.

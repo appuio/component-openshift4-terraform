@@ -1,30 +1,62 @@
 = Use Cloudscale.ch
 
-The following steps show how to set up Terraform with cloudscale.ch.
+IMPORTANT: Currently the Terraform module which this component uses for Cloudscale only supports provisioning VSHN-managed OCP4 clusters on cloudscale.ch.
 
-. Set up 2 new API keys in https://control.cloudscale.ch[control.cloudscale.ch].
-  One is for read-only access, the other for mutating operations.
+NOTE: See https://kb.vshn.ch/oc4/how-tos/cloudscale/install.html[the cloudscale.ch installation how-to] for a comprehensive how-to for setting up OCP4 on cloudscale.ch.
+
+The following steps show how to set up Terraform with cloudscale.ch
+
+NOTE: The component currently assumes that the Git repositories live on a GitLab instance.
+
+== Setup credentials
+
+. Set up 3 new API keys in https://control.cloudscale.ch[control.cloudscale.ch].
+  Two of them are used for the Terraform pipeline.
+.. The first key should be created with read-only permissions and will be used for read-only GitLab CI jobs.
+.. The second key can be created with read/write permissions and will be used for mutating GitLab CI jobs but also for the initial cluster installation.
+.. The third key needs read/write permissions and will be deployed onto the LBs for https://github.com/vshn/floaty[Floaty]):
+
+include::partial$puppet-lb-cred.adoc[]
+
+== Setup component
+
 . Configure component parameters.
 +
 [source,yaml]
 ----
 openshift4_terraform:
   provider: cloudscale
+  gitlab_ci:
+    git: <1>
+      username: Max Mustermann
+      email: mm@example.com
   terraform_variables:
     # Required parameters
     base_domain: ${openshift:baseDomain}
     ignition_ca: |-
       -----BEGIN CERTIFICATE-----
       ...
+    ssh_keys:
+      - ssh-ed25519 AA...
+    hieradata_repo_user: project_123_bot <2>
 
     # Optional parameters:
     worker_count: 3
     infra_flavor: plus-24
 ----
+<1> The Git author name and email address.
+Used when creating hieradata commits.
+If not specified, the GitLab CI defaults will be used.
+<2> The user created for the hieradata project access token.
+Please note that the Terraform module currently only supports the https://git.vshn.net/appuio/appuio_hieradata[VSHN APPUiO hieradata]
 
 . Compile the cluster catalog
 . Configure GitLab repository
-  - *CI/CD*: Configuration file: `manifests/openshift4-terraform/gitlab-ci.yml`
-  - *CI/CD*: Variables:
+  - "Settings > CI/CD > General pipelines > Configuration file" +
+    `manifests/openshift4-terraform/gitlab-ci.yml`
+  - "Settings > CI/CD > Variables"
     * `CLOUDSCALE_TOKEN_RO`
     * `CLOUDSCALE_TOKEN_RW`
+    * `CLOUDSCALE_FLOATY_SECRET`
+    * `HIERADATA_REPO_TOKEN` -- the VSHN APPUiO hieradata project access token
+    * `CONTROL_VSHN_NET_TOKEN`
