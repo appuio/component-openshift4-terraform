@@ -28,7 +28,7 @@ The GitLab CI Runner tags to apply to the GitLab jobs.
 
 [horizontal]
 type:: string
-default:: `registry.gitlab.com/gitlab-org/terraform-images/releases/0.14`
+default:: see `class/defaults.yml`, key `openshift4_terraform.images.terraform`
 
 This is the image repository that's used in the generated GitLab CI configuration for automated pipelines.
 
