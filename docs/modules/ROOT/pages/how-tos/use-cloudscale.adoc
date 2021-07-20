@@ -1,4 +1,4 @@
-= Use Cloudscale.ch
+= Use cloudscale.ch
 
 IMPORTANT: Currently the Terraform module which this component uses for cloudscale.ch only supports provisioning VSHN-managed OCP4 clusters.
 

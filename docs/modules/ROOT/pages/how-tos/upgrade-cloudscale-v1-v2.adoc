@@ -1,4 +1,4 @@
-= Upgrade Cloudscale.ch Terraform module from v1 to v2
+= Upgrade cloudscale.ch Terraform module from v1 to v2
 
 https://github.com/appuio/terraform-openshift4-cloudscale/releases/tag/v2.0.0[terraform-openshift4-cloudscale v2.0.0] introduces Puppet-managed load balancer VMs managed by VSHN.
 
