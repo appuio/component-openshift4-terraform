@@ -1,5 +1,8 @@
 parameters:
   openshift4_terraform:
+    =_tf_module_version:
+      cloudscale: v1.0.0
+      exoscale: v1.0.0
     images:
       terraform:
         # Don't forget to update the image also in the documentation
@@ -9,7 +12,7 @@ parameters:
       tags: []
       git: {}
     provider: ${facts:cloud}
-    version: master
+    version: ${openshift4_terraform:_tf_module_version:${openshift4_terraform:provider}}
     terraform_variables:
       source: git::https://github.com/appuio/terraform-openshift4-${openshift4_terraform:provider}.git//?ref=${openshift4_terraform:version}
       cluster_id: ${cluster:name}
