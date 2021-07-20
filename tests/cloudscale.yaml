@@ -7,7 +7,6 @@ parameters:
     gitlab_ci:
       tags: ["mytag"]
     provider: cloudscale
-    version: master
     terraform_variables:
       base_domain: cloudscale.ch
       ignition_ca: SomeCertificateString
