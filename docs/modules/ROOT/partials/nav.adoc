@@ -1,8 +1,9 @@
 * xref:index.adoc[Home]
 
 .How-to guides
-* xref:how-tos/use-cloudscale.adoc[Use Cloudscale.ch]
+* xref:how-tos/use-cloudscale.adoc[Use cloudscale.ch]
 * xref:how-tos/use-exoscale.adoc[Use Exoscale]
+* xref:how-tos/upgrade-cloudscale-v1-v2.adoc[Upgrade cloudscale.ch from v1 to v2]
 
 .Technical reference
 * xref:references/parameters.adoc[Parameters]

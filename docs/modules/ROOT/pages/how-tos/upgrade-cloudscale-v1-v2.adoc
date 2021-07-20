@@ -1,0 +1,89 @@
+= Upgrade cloudscale.ch Terraform module from v1 to v2
+
+https://github.com/appuio/terraform-openshift4-cloudscale/releases/tag/v2.0.0[terraform-openshift4-cloudscale v2.0.0] introduces Puppet-managed load balancer VMs managed by VSHN.
+
+That release includes breaking changes which require manual steps to upgrade existing clusters.
+
+== Prerequisites
+
+* `ssh-keygen`
+* `jq`
+* `vault` https://www.vaultproject.io/docs/commands[Vault CLI]
+* `base64`
+* `curl`
+
+== Setup environment variables
+
+.Access to API
+[source,bash]
+----
+# For example: https://api.syn.vshn.net
+# IMPORTANT: do NOT add a trailing `/`. Commands below will fail.
+export COMMODORE_API_URL=<lieutenant-api-endpoint>
+export COMMODORE_API_TOKEN=<lieutenant-api-token>
+
+export CLUSTER_ID=<lieutenant-cluster-id> # Looks like: c-<something>
+export TENANT_ID=$(curl -sH "Authorization: Bearer ${COMMODORE_API_TOKEN}" ${COMMODORE_API_URL}/clusters/${CLUSTER_ID} | jq -r .tenant)
+----
+
+== Update credentials
+
+. Add an additional cloudscale.ch token for Floaty and configure GitLab repository as described in xref:how-tos/use-cloudscale.adoc[Use cloudscale.ch]
+
+. Connect with Vault
++
+[source,bash]
+----
+export VAULT_ADDR=https://vault-prod.syn.vshn.net
+vault login -method=ldap username=<your.name>
+----
+
+. Prepare SSH key
++
+[NOTE]
+====
+We generate a unique SSH key pair for the cluster for troubleshooting access to the cluster hosts.
+====
++
+[source,bash]
+----
+SSH_PRIVATE_KEY="$(pwd)/ssh_$CLUSTER_ID"
+export SSH_PUBLIC_KEY="${SSH_PRIVATE_KEY}.pub"
+
+ssh-keygen -C "vault@$CLUSTER_ID" -t ed25519 -f $SSH_PRIVATE_KEY -N ''
+
+vault kv put clusters/kv/${TENANT_ID}/${CLUSTER_ID}/cloudscale/ssh \
+  private_key=$(cat $SSH_PRIVATE_KEY | base64 --wrap 0)
+----
+
+== Update component parameters
+
+. Set the `ssh_keys` parameter
++
+[source,yaml]
+----
+openshift4_terraform:
+  provider: cloudscale
+  terraform_variables:
+    ssh_keys:
+      - ssh-ed25519 AA... <1>
+----
+<1> The SSH public key in `$SSH_PUBLIC_KEY`.
+
+. Set the Git author _(Optional)_
++
+[source,yaml]
+----
+openshift4_terraform:
+  provider: cloudscale
+  gitlab_ci:
+    git: <1>
+      username: Max Mustermann
+      email: mm@example.com
+----
+<1> The Git author name and email address.
+Used when creating hieradata commits.
+If not specified, the GitLab CI defaults will be used.
+
+. Commit and push the changes
+. Compile the cluster catalog

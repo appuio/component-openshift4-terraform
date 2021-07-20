@@ -15,6 +15,12 @@ local input_vars = {
     ignition_bootstrap: {
       default: '',
     },
+    lb_cloudscale_api_secret: {
+      default: '',
+    },
+    control_vshn_net_token: {
+      default: '',
+    },
   },
   exoscale: {
     lb_exoscale_api_key: {
@@ -32,12 +38,11 @@ local input_vars = {
 // Configure Terraform outputs
 local common_outputs = {
   cluster_dns: cluster_dns[params.provider],
+  hieradata_mr: '${module.cluster.hieradata_mr}',
 };
 local outputs = {
   cloudscale: common_outputs,
-  exoscale: common_outputs {
-    hieradata_mr: '${module.cluster.hieradata_mr}',
-  },
+  exoscale: common_outputs,
 };
 
 // We want to pass through any provider-specific input variables (see above)
