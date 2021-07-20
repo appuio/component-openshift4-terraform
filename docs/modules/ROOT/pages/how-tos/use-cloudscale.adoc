@@ -1,6 +1,6 @@
 = Use Cloudscale.ch
 
-IMPORTANT: Currently the Terraform module which this component uses for Cloudscale only supports provisioning VSHN-managed OCP4 clusters on cloudscale.ch.
+IMPORTANT: Currently the Terraform module which this component uses for cloudscale.ch only supports provisioning VSHN-managed OCP4 clusters.
 
 NOTE: See https://kb.vshn.ch/oc4/how-tos/cloudscale/install.html[the cloudscale.ch installation how-to] for a comprehensive how-to for setting up OCP4 on cloudscale.ch.
 
