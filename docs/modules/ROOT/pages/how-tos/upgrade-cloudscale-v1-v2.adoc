@@ -6,11 +6,16 @@ That release includes breaking changes which require manual steps to upgrade exi
 
 == Prerequisites
 
+You need to be able to execute the following CLI tools locally:
+
 * `ssh-keygen`
 * `jq`
+* `yq` https://github.com/mikefarah/yq[yq YAML processor] (Version 4 or newer)
 * `vault` https://www.vaultproject.io/docs/commands[Vault CLI]
 * `base64`
 * `curl`
+* `commodore`
+* `git`
 
 == Setup environment variables
 
@@ -58,32 +63,53 @@ vault kv put clusters/kv/${TENANT_ID}/${CLUSTER_ID}/cloudscale/ssh \
 
 == Update component parameters
 
+. Compile the cluster catalog to create a local working directory
++
+[source,bash]
+----
+commodore catalog compile "${CLUSTER_ID}"
+----
+
 . Set the `ssh_keys` parameter
 +
-[source,yaml]
+[source,bash]
 ----
-openshift4_terraform:
-  provider: cloudscale
-  terraform_variables:
-    ssh_keys:
-      - ssh-ed25519 AA... <1>
+pubkey=$(cat "${SSH_PUBLIC_KEY}")
+yq eval -i '.parameters.openshift4_terraform.terraform_variables.ssh_keys += [strenv(pubkey)]' \
+  "inventory/classes/${TENANT_ID}/${CLUSTER_ID}.yml"
 ----
-<1> The SSH public key in `$SSH_PUBLIC_KEY`.
 
 . Set the Git author _(Optional)_
 +
-[source,yaml]
+[source,bash]
 ----
-openshift4_terraform:
-  provider: cloudscale
-  gitlab_ci:
-    git: <1>
-      username: Max Mustermann
-      email: mm@example.com
+GITLAB_CI_USERNAME="Max Mustermann" <1>
+GITLAB_CI_EMAIL="mm@example.com" <2>
+
+yq eval -i '.parameters.openshift4_terraform.gitlab_ci.git = {
+    "username": strenv(GITLAB_CI_USERNAME),
+    "email": strenv(GITLAB_CI_EMAIL),
+  }' \
+  "inventory/classes/${TENANT_ID}/${CLUSTER_ID}.yml"
 ----
-<1> The Git author name and email address.
-Used when creating hieradata commits.
+<1> The Git author name to use when creating hieradata commits from GitLab CI.
+If not specified, the GitLab CI defaults will be used.
+<1> The Git author email address to use when creating hieradata commits from GitLab CI.
 If not specified, the GitLab CI defaults will be used.
 
-. Commit and push the changes
-. Compile the cluster catalog
+. Commit and push the changes in the tenant repo
++
+[source,bash]
+----
+pushd "inventory/classes/${TENANT_ID}"
+git commit -av
+git push origin master
+popd
+----
+
+. Compile and push the cluster catalog
++
+[source,bash]
+----
+commodore catalog compile "${CLUSTER_ID}" --push -i
+----
