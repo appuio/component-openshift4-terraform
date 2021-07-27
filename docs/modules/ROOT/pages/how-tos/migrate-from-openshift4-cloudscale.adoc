@@ -10,7 +10,11 @@ It's highly recommended that you first perform the component migration and then 
 
 == Prerequisites
 
-* Todo
+You need to be able to execute the following CLI tools locally:
+
+* `yq` https://github.com/mikefarah/yq[yq YAML processor] (Version 4 or newer)
+* `commodore`
+* `git`
 
 == Steps
 
