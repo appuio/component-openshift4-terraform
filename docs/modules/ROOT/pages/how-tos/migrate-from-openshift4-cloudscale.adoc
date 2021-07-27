@@ -1,12 +1,12 @@
 = Migrate from component `openshift4-cloudscale`
 
 This component supports both the Terraform module for OpenShift 4 on Exoscale and cloudscale.ch.
-We previously had a dedicated component `openshift4-cloudscale` for driving the Terraform module for OpenShift 4 on cloudscale.ch.
+Previously there was a dedicated component `openshift4-cloudscale` for driving the Terraform module for OpenShift 4 on cloudscale.ch.
 That component is deprecated in favor of this component.
 
 This how-to provides a guide for migrating from component `openshift4-cloudscale` to `openshift4-terraform`.
 
-We recommend that you first perform the component migration and then follow the how-to for xref:how-tos/upgrade-cloudscale-v1-v2.adoc[upgrading the cloudscale.ch Terraform module from v1 to v2].
+It's highly recommended that you first perform the component migration and then follow the guide to xref:how-tos/upgrade-cloudscale-v1-v2.adoc[upgrade the cloudscale.ch Terraform module from v1 to v2].
 
 == Prerequisites
 
@@ -43,23 +43,15 @@ export TENANT_ID=$(yq e '.parameters.cluster.tenant' inventory/classes/params/cl
 
 . Update cluster config to use component `openshift4-terraform`
 +
-.Change to tenant config repo
-[source,bash]
-----
+# Change to tenant config repo
 pushd "inventory/classes/${TENANT_ID}"
-----
-+
-.Remove component openshift4-cloudscale and add component openshift4-terraform
-[source,bash]
-----
+
+# Remove component openshift4-cloudscale and add component openshift4-terraform
 yq eval -i '.applications = (.applications[] |
   select(. != "openshift4-cloudscale") | [[.]][]) + (["openshift4-terraform"])' \
   "${CLUSTER_ID}.yml"
-----
-+
-.Move parameters from openshift4_cloudscale to openshift4_terraform
-[source,bash]
-----
+
+# Move parameters from openshift4_cloudscale to openshift4_terraform
 yq eval -i '.parameters.openshift4_terraform = .parameters.openshift4_cloudscale |
   del(.parameters.openshift4_cloudscale) |
   .parameters.openshift4_terraform.terraform_variables =
