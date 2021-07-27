@@ -1,0 +1,90 @@
+= Migrate from component `openshift4-cloudscale`
+
+This component supports both the Terraform module for OpenShift 4 on Exoscale and cloudscale.ch.
+Previously there was a dedicated component `openshift4-cloudscale` for driving the Terraform module for OpenShift 4 on cloudscale.ch.
+That component is deprecated in favor of this component.
+
+This how-to provides a guide for migrating from component `openshift4-cloudscale` to `openshift4-terraform`.
+
+It's highly recommended that you first perform the component migration and then follow the guide to xref:how-tos/upgrade-cloudscale-v1-v2.adoc[upgrade the cloudscale.ch Terraform module from v1 to v2].
+
+== Prerequisites
+
+You need to be able to execute the following CLI tools locally:
+
+* `yq` https://github.com/mikefarah/yq[yq YAML processor] (Version 4 or newer)
+* `commodore`
+* `git`
+
+== Steps
+
+=== Prepare inputs
+
+. Make a note of the Project Syn ID of the cluster which you want to migrate
++
+[source,bash]
+----
+export CLUSTER_ID=c-the-cluster-1234 <1>
+----
+<1> Replace with the ID of the cluster to migrate
+
+=== Migrate component config
+
+. Make cluster catalog available locally
++
+[source,bash]
+----
+commodore catalog compile ${CLUSTER_ID}
+----
+
+. Extract tenant ID from commodore working directory
++
+[source,bash]
+----
+export TENANT_ID=$(yq e '.parameters.cluster.tenant' inventory/classes/params/cluster.yml)
+----
+
+
+. Update cluster config to use component `openshift4-terraform`
++
+# Change to tenant config repo
+pushd "inventory/classes/${TENANT_ID}"
+
+# Remove component openshift4-cloudscale and add component openshift4-terraform
+yq eval -i '.applications = (.applications[] |
+  select(. != "openshift4-cloudscale") | [[.]][]) + (["openshift4-terraform"])' \
+  "${CLUSTER_ID}.yml"
+
+# Move parameters from openshift4_cloudscale to openshift4_terraform
+yq eval -i '.parameters.openshift4_terraform = .parameters.openshift4_cloudscale |
+  del(.parameters.openshift4_cloudscale) |
+  .parameters.openshift4_terraform.terraform_variables =
+    .parameters.openshift4_terraform.variables |
+  del(.parameters.openshift4_terraform.variables)' "${CLUSTER_ID}.yml"
+----
+
+. Inspect changes and commit them if they're ok
++
+.Commit changes
+[source,bash]
+----
+git commit -av
+git push origin master
+----
+
+. Switch back to Commodore working directory
++
+[source,bash]
+----
+popd
+----
+
+. Update GitLab CI configuration
+  * Change location of `gitlab-ci.yml` in "Settings > CI/CD > General pipelines" to `manifests/openshift4-terraform/gitlab-ci.yml`
+
+. Compile and push new catalog
++
+[source,bash]
+----
+commodore catalog compile ${CLUSTER_ID} --push -i
+----
