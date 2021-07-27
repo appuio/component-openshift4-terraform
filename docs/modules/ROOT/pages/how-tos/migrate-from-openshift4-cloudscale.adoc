@@ -68,7 +68,8 @@ yq eval -i '.parameters.openshift4_terraform = .parameters.openshift4_cloudscale
 .Commit changes
 [source,bash]
 ----
-git commit -v
+git commit -av
+git push origin master
 ----
 
 . Switch back to Commodore working directory
