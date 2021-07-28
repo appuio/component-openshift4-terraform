@@ -24,6 +24,18 @@ default:: `[]`
 
 The GitLab CI Runner tags to apply to the GitLab jobs.
 
+== `gitlab_ci.git`
+
+[horizontal]
+type:: dict
+default:: `{}`
+
+Git user information for the CI pipeline.
+If not overridden, the default GitLab CI user information is used for commits made by the CI pipeline.
+
+Valid keys for the dict are `username` and `email`.
+If present, these keys are configured as `GIT_AUTHOR_NAME` and `GIT_AUTHOR_EMAIL` for the CI pipeline respectively.
+
 == `images.terraform.image`
 
 [horizontal]
@@ -54,9 +66,11 @@ The variables are merged with the defaults, unless overridden.
 
 [horizontal]
 type:: string
-default:: `master`
+default:: See https://github.com/appuio/component-openshift4-terraform/blob/master/class/defaults.yml[`class/defaults.yml`, key `_tf_module_version`]
 
-The git revision of the selected Terraform module (see parameter `provider`)
+The git revision of the selected Terraform module.
+See the documentation for <<_provider,parameter `provider`>> for supported providers.
+By default, parameter `provider` is used to look up the version for the Terraform module in internal parameter `_tf_module_version`.
 
 == Example
 
