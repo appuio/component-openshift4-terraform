@@ -96,6 +96,8 @@ local GitLabCI() = {
     },
     variables: cloud_specific_variables[params.provider].apply,
     script: [
+      'apk add --no-cache curl',
+      'export GIT_ASKPASS=${TF_ROOT}/git-askpass.sh',
       'gitlab-terraform apply',
     ],
     dependencies: [
