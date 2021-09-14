@@ -47,6 +47,8 @@ export TENANT_ID=$(yq e '.parameters.cluster.tenant' inventory/classes/params/cl
 
 . Update cluster config to use component `openshift4-terraform`
 +
+[source,bash]
+----
 # Change to tenant config repo
 pushd "inventory/classes/${TENANT_ID}"
 
