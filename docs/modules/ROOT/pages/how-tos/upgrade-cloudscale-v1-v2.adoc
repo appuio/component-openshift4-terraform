@@ -94,7 +94,7 @@ yq eval -i '.parameters.openshift4_terraform.gitlab_ci.git = {
 ----
 <1> The Git author name to use when creating hieradata commits from GitLab CI.
 If not specified, the GitLab CI defaults will be used.
-<1> The Git author email address to use when creating hieradata commits from GitLab CI.
+<2> The Git author email address to use when creating hieradata commits from GitLab CI.
 If not specified, the GitLab CI defaults will be used.
 
 . Commit and push the changes in the tenant repo

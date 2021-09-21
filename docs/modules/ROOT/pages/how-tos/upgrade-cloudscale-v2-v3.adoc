@@ -1,0 +1,125 @@
+= Upgrade cloudscale.ch Terraform module from v2 to v3
+
+https://github.com/appuio/terraform-openshift4-cloudscale/releases/tag/v3.0.0[terraform-openshift4-cloudscale v3.0.0] moves load balancer state to a shared module.
+
+That release includes breaking changes which require manual steps to upgrade existing clusters.
+
+== Prerequisites
+
+You need to be able to execute the following CLI tools locally:
+
+* `docker`
+* `yq` https://github.com/mikefarah/yq[yq YAML processor] (Version 4 or newer)
+* `jq`
+* `vault` https://www.vaultproject.io/docs/commands[Vault CLI]
+
+== Setup environment
+
+. Access to API
++
+[source,bash]
+----
+# For example: https://api.syn.vshn.net
+# IMPORTANT: do NOT add a trailing `/`. Commands below will fail.
+export COMMODORE_API_URL=<lieutenant-api-endpoint>
+export COMMODORE_API_TOKEN=<lieutenant-api-token>
+
+export CLUSTER_ID=<lieutenant-cluster-id> # Looks like: c-<something>
+export TENANT_ID=$(curl -sH "Authorization: Bearer ${COMMODORE_API_TOKEN}" ${COMMODORE_API_URL}/clusters/${CLUSTER_ID} | jq -r .tenant)
+
+# From https://git.vshn.net/-/profile/personal_access_tokens, "api" scope is sufficient
+export GITLAB_TOKEN=<gitlab-api-token>
+export GITLAB_USER=<gitlab-user-name>
+----
+
+. Connect with Vault
++
+[source,bash]
+----
+export VAULT_ADDR=https://vault-prod.syn.vshn.net
+vault login -method=ldap username=<your.name>
+----
+
+. Compile the cluster catalog to create a local working directory
++
+[source,bash]
+----
+commodore catalog compile "${CLUSTER_ID}"
+----
+
+== Migrate Terraform state
+
+. Configure Terraform secrets
++
+[source,bash]
+----
+export CLOUDSCALE_TOKEN=$(vault kv get -format=json \
+  clusters/kv/${TENANT_ID}/${CLUSTER_ID}/cloudscale \
+  | jq -r '.data.data.token')
+
+cat <<EOF > ./terraform.env
+CLOUDSCALE_TOKEN
+EOF
+----
+
+. Setup Terraform
++
+.Prepare Terraform execution environment
+[source,bash]
+----
+# Set terraform image and tag to be used
+tf_image=$(\
+  yq eval ".parameters.openshift4_terraform.images.terraform.image" \
+  dependencies/openshift4-terraform/class/defaults.yml)
+tf_tag=$(\
+  yq eval ".parameters.openshift4_terraform.images.terraform.tag" \
+  dependencies/openshift4-terraform/class/defaults.yml)
+
+# Generate the terraform alias
+base_dir=$(pwd)
+alias terraform='docker run -it --rm \
+  -e REAL_UID=$(id -u) \
+  --env-file ${base_dir}/terraform.env \
+  -w /tf \
+  -v $(pwd):/tf \
+  --ulimit memlock=-1 \
+  "${tf_image}:${tf_tag}" /tf/terraform.sh'
+
+export GITLAB_REPOSITORY_URL=$(curl -sH "Authorization: Bearer ${COMMODORE_API_TOKEN}" ${COMMODORE_API_URL}/clusters/${CLUSTER_ID} | jq -r '.gitRepo.url' | sed 's|ssh://||; s|/|:|')
+export GITLAB_REPOSITORY_NAME=${GITLAB_REPOSITORY_URL##*/}
+export GITLAB_CATALOG_PROJECT_ID=$(curl -sH "Authorization: Bearer ${GITLAB_TOKEN}" "https://git.vshn.net/api/v4/projects?simple=true&search=${GITLAB_REPOSITORY_NAME/.git}" | jq -r ".[] | select(.ssh_url_to_repo == \"${GITLAB_REPOSITORY_URL}\") | .id")
+export GITLAB_STATE_URL="https://git.vshn.net/api/v4/projects/${GITLAB_CATALOG_PROJECT_ID}/terraform/state/cluster"
+
+pushd catalog/manifests/openshift4-terraform/
+----
++
+.Initialize Terraform
+[source,bash]
+----
+terraform init \
+  "-backend-config=address=${GITLAB_STATE_URL}" \
+  "-backend-config=lock_address=${GITLAB_STATE_URL}/lock" \
+  "-backend-config=unlock_address=${GITLAB_STATE_URL}/lock" \
+  "-backend-config=username=${GITLAB_USER}" \
+  "-backend-config=password=${GITLAB_TOKEN}" \
+  "-backend-config=lock_method=POST" \
+  "-backend-config=unlock_method=DELETE" \
+  "-backend-config=retry_wait_min=5"
+----
+
+. Migrate state
++
+.Run the migration script
+[source,bash]
+----
+./migrate-state-v2-v3.sh
+----
++
+.Verify state using `plan`
+[source,bash]
+----
+# No resources, except the hieradata git checkout, should be recreated.
+terraform plan
+----
+
+NOTE: Terraform may wants to create the hieradata git checkout. This is expected and can be ignored.
