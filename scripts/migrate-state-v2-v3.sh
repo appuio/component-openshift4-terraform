@@ -13,3 +13,6 @@ terraform state mv module.cluster.null_resource.register_lb module.cluster.modul
 terraform state mv module.cluster.data.local_file.hieradata_mr_url 'module.cluster.module.lb.module.hiera.data.local_file.hieradata_mr_url[0]'
 terraform state mv 'module.cluster.gitfile_checkout.appuio_hieradata[0]' module.cluster.module.lb.module.hiera.gitfile_checkout.appuio_hieradata
 terraform state mv 'module.cluster.local_file.lb_hieradata[0]' module.cluster.module.lb.module.hiera.local_file.lb_hieradata
+
+terraform state mv module.cluster.cloudscale_network.privnet 'module.cluster.cloudscale_network.privnet[0]'
+terraform state mv module.cluster.cloudscale_subnet.privnet_subnet 'module.cluster.cloudscale_subnet.privnet_subnet[0]'
