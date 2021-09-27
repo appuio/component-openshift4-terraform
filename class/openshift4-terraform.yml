@@ -16,5 +16,6 @@ parameters:
           - openshift4-terraform/scripts/terraform.sh
           - openshift4-terraform/scripts/tf.sh
           - openshift4-terraform/scripts/git-askpass.sh
+          - openshift4-terraform/scripts/migrate-state-v2-v3.sh
         input_type: copy
         output_path: openshift4-terraform/

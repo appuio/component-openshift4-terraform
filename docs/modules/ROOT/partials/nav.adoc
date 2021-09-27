@@ -4,6 +4,7 @@
 * xref:how-tos/use-cloudscale.adoc[Use cloudscale.ch]
 * xref:how-tos/use-exoscale.adoc[Use Exoscale]
 * xref:how-tos/upgrade-cloudscale-v1-v2.adoc[Upgrade cloudscale.ch from v1 to v2]
+* xref:how-tos/upgrade-cloudscale-v2-v3.adoc[Upgrade cloudscale.ch from v2 to v3]
 * xref:how-tos/migrate-from-openshift4-cloudscale.adoc[Migrate from component `openshift4-cloudscale`]
 
 .Technical reference
