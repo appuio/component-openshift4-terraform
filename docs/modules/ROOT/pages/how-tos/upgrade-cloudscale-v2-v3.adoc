@@ -1,8 +1,10 @@
 = Upgrade cloudscale.ch Terraform module from v2 to v3
 
-https://github.com/appuio/terraform-openshift4-cloudscale/releases/tag/v3.0.0[terraform-openshift4-cloudscale v3.0.0] moves load balancer state to a shared module.
+When migrating from v2 to v3, the following breaking changes require manual changes to the Terraform state of existing clusters:
 
-That release includes breaking changes which require manual steps to upgrade existing clusters.
+* https://github.com/appuio/terraform-openshift4-cloudscale/releases/tag/v3.0.0[terraform-openshift4-cloudscale v3.0.0] uses the new https://github.com/appuio/terraform-modules/tree/main/modules/vshn-lbaas-cloudscale[shared load-balancer module] to provision the LBs.
+* https://github.com/appuio/terraform-openshift4-cloudscale/releases/tag/v3.1.0[terraform-openshift4-cloudscale v3.1.0] adds support for using an existing cloudscale.ch subnet.
+
 
 == Prerequisites
 
@@ -122,4 +124,4 @@ terraform init \
 terraform plan
 ----
 
-NOTE: Terraform may wants to create the hieradata git checkout. This is expected and can be ignored.
+NOTE: Terraform may want to create the hieradata git checkout. This is expected and can be ignored.
