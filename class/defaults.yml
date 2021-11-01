@@ -16,3 +16,4 @@ parameters:
       source: git::https://github.com/appuio/terraform-openshift4-${openshift4_terraform:provider}.git//?ref=${openshift4_terraform:version}
       cluster_id: ${cluster:name}
       region: ${facts:region}
+      team: null

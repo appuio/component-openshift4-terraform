@@ -58,7 +58,7 @@ local terraform_config =
   {
     'main.tf': {
       module: {
-        cluster: (
+        cluster: std.prune(
           params.terraform_variables +
           provider_module_vars
         ),
