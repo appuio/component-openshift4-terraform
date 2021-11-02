@@ -1,8 +1,8 @@
 parameters:
   openshift4_terraform:
     =_tf_module_version:
-      cloudscale: v3.3.0
-      exoscale: v1.3.0
+      cloudscale: v3.4.0
+      exoscale: v1.4.0
     images:
       terraform:
         image: registry.gitlab.com/gitlab-org/terraform-images/releases/0.14
@@ -16,3 +16,4 @@ parameters:
       source: git::https://github.com/appuio/terraform-openshift4-${openshift4_terraform:provider}.git//?ref=${openshift4_terraform:version}
       cluster_id: ${cluster:name}
       region: ${facts:region}
+      team: null
