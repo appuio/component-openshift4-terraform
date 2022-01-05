@@ -1,0 +1,188 @@
+= Upgrade Exoscale clusters from component version v3 to v4
+
+When migrating from component version v3 to v4, the following breaking changes require manual changes to the Terraform state of existing clusters:
+
+* https://github.com/appuio/terraform-openshift4-exoscale/releases/tag/v2.0.0[terraform-openshift4-exoscale v2.0.0] uses the new https://github.com/appuio/terraform-modules/tree/main/modules/vshn-lbaas-exoscale[shared Exoscale load-balancer module] to provision the LBs.
+
+IMPORTANT: This guide assumes that you've already upgraded component `openshift4-terraform` to a v4 version for the cluster you're migrating.
+
+== Prerequisites
+
+You need to be able to execute the following CLI tools locally:
+
+* `docker`
+* `yq` https://github.com/mikefarah/yq[yq YAML processor] (Version 4 or newer)
+* `jq`
+* `vault` https://www.vaultproject.io/docs/commands[Vault CLI]
+
+== Setup environment
+
+. Access to API
++
+[source,bash]
+----
+# For example: https://api.syn.vshn.net
+# IMPORTANT: do NOT add a trailing `/`. Commands below will fail.
+export COMMODORE_API_URL=<lieutenant-api-endpoint>
+export COMMODORE_API_TOKEN=<lieutenant-api-token>
+
+export CLUSTER_ID=<lieutenant-cluster-id> # Looks like: c-<something>
+export TENANT_ID=$(curl -sH "Authorization: Bearer ${COMMODORE_API_TOKEN}" ${COMMODORE_API_URL}/clusters/${CLUSTER_ID} | jq -r .tenant)
+
+# From https://git.vshn.net/-/profile/personal_access_tokens, "api" scope is sufficient
+export GITLAB_TOKEN=<gitlab-api-token>
+export GITLAB_USER=<gitlab-user-name>
+----
+
+. Connect with Vault
++
+[source,bash]
+----
+export VAULT_ADDR=https://vault-prod.syn.vshn.net
+vault login -method=ldap username=<your.name>
+----
+
+. Verify that your cluster uses component `openshift4-terraform` v4.
+If that's not the case, update the component version to v4.x before compiling the cluster catalog.
+
+. Compile the cluster catalog to create a local working directory
++
+[source,bash]
+----
+commodore catalog compile "${CLUSTER_ID}"
+----
+
+== Migrate Terraform state
+
+. Get an Exoscale unrestricted API key for the cluster's organization from the https://portal.exoscale.com[Exoscale Console].
++
+[source,bash]
+----
+export EXOSCALE_API_KEY=EXO... <1>
+export EXOSCALE_API_SECRET=... <2>
+
+cat <<EOF > ./terraform.env
+EXOSCALE_API_KEY
+EXOSCALE_API_SECRET
+EOF
+----
+<1> Replace with your API key
+<2> Replace with your API secret
++
+TIP: You need the Exoscale credentials so Terraform can refresh the state.
+
+. Setup Terraform
++
+.Prepare Terraform execution environment
+[source,bash]
+----
+# Set terraform image and tag to be used
+tf_image=$(\
+  yq eval ".parameters.openshift4_terraform.images.terraform.image" \
+  dependencies/openshift4-terraform/class/defaults.yml)
+tf_tag=$(\
+  yq eval ".parameters.openshift4_terraform.images.terraform.tag" \
+  dependencies/openshift4-terraform/class/defaults.yml)
+
+# Generate the terraform alias
+base_dir=$(pwd)
+alias terraform='docker run -it --rm \
+  -e REAL_UID=$(id -u) \
+  --env-file ${base_dir}/terraform.env \
+  -w /tf \
+  -v $(pwd):/tf \
+  --ulimit memlock=-1 \
+  "${tf_image}:${tf_tag}" /tf/terraform.sh'
+
+export GITLAB_REPOSITORY_URL=$(curl -sH "Authorization: Bearer ${COMMODORE_API_TOKEN}" ${COMMODORE_API_URL}/clusters/${CLUSTER_ID} | jq -r '.gitRepo.url' | sed 's|ssh://||; s|/|:|')
+export GITLAB_REPOSITORY_NAME=${GITLAB_REPOSITORY_URL##*/}
+export GITLAB_CATALOG_PROJECT_ID=$(curl -sH "Authorization: Bearer ${GITLAB_TOKEN}" "https://git.vshn.net/api/v4/projects?simple=true&search=${GITLAB_REPOSITORY_NAME/.git}" | jq -r ".[] | select(.ssh_url_to_repo == \"${GITLAB_REPOSITORY_URL}\") | .id")
+export GITLAB_STATE_URL="https://git.vshn.net/api/v4/projects/${GITLAB_CATALOG_PROJECT_ID}/terraform/state/cluster"
+
+pushd catalog/manifests/openshift4-terraform/
+----
++
+.Initialize Terraform
+[source,bash]
+----
+terraform init \
+  "-backend-config=address=${GITLAB_STATE_URL}" \
+  "-backend-config=lock_address=${GITLAB_STATE_URL}/lock" \
+  "-backend-config=unlock_address=${GITLAB_STATE_URL}/lock" \
+  "-backend-config=username=${GITLAB_USER}" \
+  "-backend-config=password=${GITLAB_TOKEN}" \
+  "-backend-config=lock_method=POST" \
+  "-backend-config=unlock_method=DELETE" \
+  "-backend-config=retry_wait_min=5"
+----
+
+. Migrate state
++
+.Run the migration script
+[source,bash]
+----
+./migrate-state-exoscale-v3-v4.sh
+----
++
+.Verify state using `plan`
+[source,bash]
+----
+terraform plan
+----
++
+The only changes should be roughly the following:
++
+[source]
+----
+[ ... snipped ... ]
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  ~ update in-place
+ <= read (data resources)
+
+Terraform will perform the following actions:
+
+  # module.cluster.module.lb.exoscale_ipaddress.api will be updated in-place
+  ~ resource "exoscale_ipaddress" "api" {
+        id          = "8e7933e9-ddf9-41bb-b5a7-79b4885d3d18"
+      + reverse_dns = "api.c-test-1234.appuio-beta.ch."
+        tags        = {}
+        # (3 unchanged attributes hidden)
+    }
+
+  # module.cluster.module.lb.exoscale_ipaddress.ingress will be updated in-place
+  ~ resource "exoscale_ipaddress" "ingress" {
+        id          = "f091977f-6ef4-421d-b2ff-29bfb13460fe"
+      + reverse_dns = "ingress.c-test-1234.appuio-beta.ch."
+        tags        = {}
+        # (3 unchanged attributes hidden)
+    }
+
+  # module.cluster.module.lb.exoscale_network.lbnet[0] will be updated in-place
+  ~ resource "exoscale_network" "lbnet" {
+      ~ display_text = "c-test-1234 private network" -> "c-test-1234 private network for LB VRRP traffic"
+        id           = "3d532306-864d-86c1-e67c-f7902718632e"
+      ~ name         = "c-test-1234_clusternet" -> "c-test-1234_lb_vrrp"
+        tags         = {}
+        # (4 unchanged attributes hidden)
+    }
+
+Plan: 0 to add, 3 to change, 0 to destroy.
+----
++
+To summarize, Terraform applies the following changes:
+
+* `terraform-openshift4-exoscale` v2 configures reverse DNS records for the floating IPs.
+  The existing floating IPs are updated to have reverse DNS records.
+
+* By default, `terraform-openshift4-exoscale` v2 doesn't manage a cluster private network, and the existing network is migrated to become the `lb-vrrp` network.
+  The existing network's `name` and `display_text` are updated to reflect this semantic change.
++
+NOTE: Terraform may also create the hieradata git checkout. This is expected.
+
+. Apply the changes.
++
+[source,bash]
+----
+terraform apply
+----
