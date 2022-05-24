@@ -42,7 +42,7 @@ docs-vale: ## Lint the documentation
 
 .PHONY: test-cloudscale
 test-cloudscale: testfile = cloudscale.yaml
-test-cloudscale: extra_args = -e CLOUDSCALE_TOKEN=sometoken
+test-cloudscale: extra_args = -e CLOUDSCALE_API_TOKEN=sometoken
 test-cloudscale: .test ## Run tests for cloudscale provider
 
 .PHONY: test-exoscale
