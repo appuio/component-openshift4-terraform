@@ -55,12 +55,12 @@ commodore catalog compile "${CLUSTER_ID}"
 +
 [source,bash]
 ----
-export CLOUDSCALE_TOKEN=$(vault kv get -format=json \
+export CLOUDSCALE_API_TOKEN=$(vault kv get -format=json \
   clusters/kv/${TENANT_ID}/${CLUSTER_ID}/cloudscale \
   | jq -r '.data.data.token')
 
 cat <<EOF > ./terraform.env
-CLOUDSCALE_TOKEN
+CLOUDSCALE_API_TOKEN
 EOF
 ----
 
