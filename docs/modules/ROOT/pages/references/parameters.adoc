@@ -40,7 +40,7 @@ If present, these keys are configured as `GIT_AUTHOR_NAME` and `GIT_AUTHOR_EMAIL
 
 [horizontal]
 type:: string
-default:: see `class/defaults.yml`, key `openshift4_terraform.images.terraform`
+default:: See https://github.com/appuio/component-openshift4-terraform/blob/master/class/defaults.yml[`class/defaults.yml`]
 
 This is the image repository that's used in the generated GitLab CI configuration for automated pipelines.
 
@@ -48,7 +48,7 @@ This is the image repository that's used in the generated GitLab CI configuratio
 
 [horizontal]
 type:: string
-default:: `v0.10.0`
+default:: See https://github.com/appuio/component-openshift4-terraform/blob/master/class/defaults.yml[`class/defaults.yml`]
 
 This is the corresponding image tag for `images.terraform.image`
 
