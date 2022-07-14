@@ -42,7 +42,7 @@ openshift4_terraform:
 
     # Optional parameters:
     worker_count: 3
-    infra_flavor: plus-24
+    infra_flavor: plus-24-6
 ----
 <1> The Git author name and email address.
 Used when creating hieradata commits.
