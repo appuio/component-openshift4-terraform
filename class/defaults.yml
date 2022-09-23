@@ -6,7 +6,7 @@ parameters:
     images:
       terraform:
         image: registry.gitlab.com/gitlab-org/terraform-images/releases/terraform
-        tag: '1.2.8'
+        tag: '1.2.9'
     gitlab_ci:
       tags: []
       git: {}
