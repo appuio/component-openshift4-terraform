@@ -1,0 +1,213 @@
+= Upgrade Exoscale clusters from component version v4 to v5
+
+When migrating from component version v4 to v5, the following breaking changes require manual changes to the Terraform state of existing clusters:
+
+* https://github.com/appuio/terraform-openshift4-exoscale/releases/tag/v3.0.0[terraform-openshift4-exoscale v3.0.0] removes all uses of deprecated Exoscale Terraform resources.
+
+IMPORTANT: This guide assumes that you've already upgraded component `openshift4-terraform` to a v5 version for the cluster you're migrating.
+
+== Prerequisites
+
+You need to be able to execute the following CLI tools locally:
+
+* `docker`
+* `yq` https://github.com/mikefarah/yq[yq YAML processor] (Version 4 or newer)
+* `jq`
+* `vault` https://www.vaultproject.io/docs/commands[Vault CLI]
+* `terraform` https://learn.hashicorp.com/tutorials/terraform/install-cli[Terraform CLI] >= 1.3.0
+* `python3` >= 3.8.0
+
+== Setup environment
+
+. Access to API
++
+[source,bash]
+----
+# For example: https://api.syn.vshn.net
+# IMPORTANT: do NOT add a trailing `/`. Commands below will fail.
+export COMMODORE_API_URL=<lieutenant-api-endpoint>
+export COMMODORE_API_TOKEN=<lieutenant-api-token>
+
+export CLUSTER_ID=<lieutenant-cluster-id> # Looks like: c-<something>
+export TENANT_ID=$(curl -sH "Authorization: Bearer ${COMMODORE_API_TOKEN}" ${COMMODORE_API_URL}/clusters/${CLUSTER_ID} | jq -r .tenant)
+
+# From https://git.vshn.net/-/profile/personal_access_tokens, "api" scope is sufficient
+export GITLAB_TOKEN=<gitlab-api-token>
+export GITLAB_USER=<gitlab-user-name>
+----
+
+. Connect with Vault
++
+[source,bash]
+----
+export VAULT_ADDR=https://vault-prod.syn.vshn.net
+vault login -method=ldap username=<your.name>
+----
+
+. Verify that your cluster uses component `openshift4-terraform` v5.
+If that's not the case, update the component version to v5.x before compiling the cluster catalog.
+
+. Compile the cluster catalog to create a local working directory
++
+[source,bash]
+----
+commodore catalog compile "${CLUSTER_ID}"
+----
+
+== Migrate Terraform state
+
+. Fetch hieradata repo token from Vault
++
+[source,bash]
+----
+export HIERADATA_REPO_TOKEN=$(vault kv get \
+  -format=json "clusters/kv/lbaas/hieradata_repo_token" | jq '.data.data.token')
+----
++
+TIP: You need the Hieradata repo token so that Terraform can access the LB hieradata Git repo.
+
+. Get an Exoscale unrestricted API key for the cluster's organization from the https://portal.exoscale.com[Exoscale Console].
++
+[source,bash]
+----
+export EXOSCALE_API_KEY=EXO... <1>
+export EXOSCALE_API_SECRET=... <2>
+
+cat <<EOF > ./terraform.env
+EXOSCALE_API_KEY
+EXOSCALE_API_SECRET
+HIERADATA_REPO_TOKEN
+EOF
+----
+<1> Replace with your API key
+<2> Replace with your API secret
++
+TIP: You need the Exoscale credentials so that Terraform can refresh the state.
+
+. Setup Terraform
++
+.Prepare Terraform execution environment
+[source,bash]
+----
+# Set terraform image and tag to be used
+tf_image=$(\
+  yq eval ".parameters.openshift4_terraform.images.terraform.image" \
+  dependencies/openshift4-terraform/class/defaults.yml)
+tf_tag=$(\
+  yq eval ".parameters.openshift4_terraform.images.terraform.tag" \
+  dependencies/openshift4-terraform/class/defaults.yml)
+
+# Generate the terraform alias
+base_dir=$(pwd)
+alias terraform='docker run -it --rm \
+  -e REAL_UID=$(id -u) \
+  --env-file ${base_dir}/terraform.env \
+  -w /tf \
+  -v $(pwd):/tf \
+  --ulimit memlock=-1 \
+  "${tf_image}:${tf_tag}" /tf/terraform.sh'
+
+export GITLAB_REPOSITORY_URL=$(curl -sH "Authorization: Bearer ${COMMODORE_API_TOKEN}" ${COMMODORE_API_URL}/clusters/${CLUSTER_ID} | jq -r '.gitRepo.url' | sed 's|ssh://||; s|/|:|')
+export GITLAB_REPOSITORY_NAME=${GITLAB_REPOSITORY_URL##*/}
+export GITLAB_CATALOG_PROJECT_ID=$(curl -sH "Authorization: Bearer ${GITLAB_TOKEN}" "https://git.vshn.net/api/v4/projects?simple=true&search=${GITLAB_REPOSITORY_NAME/.git}" | jq -r ".[] | select(.ssh_url_to_repo == \"${GITLAB_REPOSITORY_URL}\") | .id")
+export GITLAB_STATE_URL="https://git.vshn.net/api/v4/projects/${GITLAB_CATALOG_PROJECT_ID}/terraform/state/cluster"
+
+pushd catalog/manifests/openshift4-terraform/
+----
++
+[IMPORTANT]
+====
+The migration script doesn't use the `terraform` alias configured here.
+Please make sure that you've got a Terraform binary available locally (see also section <<Prerequisites>>).
+====
++
+.Initialize Terraform
+[source,bash]
+----
+terraform init \
+  "-backend-config=address=${GITLAB_STATE_URL}" \
+  "-backend-config=lock_address=${GITLAB_STATE_URL}/lock" \
+  "-backend-config=unlock_address=${GITLAB_STATE_URL}/lock" \
+  "-backend-config=username=${GITLAB_USER}" \
+  "-backend-config=password=${GITLAB_TOKEN}" \
+  "-backend-config=lock_method=POST" \
+  "-backend-config=unlock_method=DELETE" \
+  "-backend-config=retry_wait_min=5"
+----
+
+. Migrate state
++
+.Run the migration script
+[source,bash]
+----
+./migrate-state-exoscale-v4-v5.py
+----
++
+.Verify state using `plan`
+[source,bash]
+----
+terraform plan
+----
++
+You can expect the following changes:
++
+* The managed Floaty Exoscale access key will be created
+* The LB hieradata will be updated to use the new Floaty access key
+* All compute instances will be updated to use their FQDN instead of their hostname for field `name`
++
+NOTE: Despite what the web console claims, this change doesn't require the instances to be restarted.
+* Field `private_network_ids` of all compute instances is added
+* The admin SSH key resource is recreated
+
+. Apply the changes.
++
+[source,bash]
+----
+terraform apply
+----
+
+. Merge the hieradata MR.
+
+. Run Puppet on the cluster's LBs, so that you're using the new Floaty API key managed by Terraform
++
+[source,bash]
+----
+for id in 0 1; do
+  lb_fqdn=$(terraform state show "module.cluster.module.lb.exoscale_domain_record.lb[$id]" | grep hostname | cut -d'=' -f2 | tr -d ' "\r\n')
+  echo "${lb_fqdn}"
+  ssh "${lb_fqdn}" sudo puppetctl run
+done
+----
+
+. Fetch and then remove the old Floaty API key from Vault
++
+[source,bash]
+----
+OLD_FLOATY_KEY=$(vault kv get -format=json \
+  clusters/kv/${TENANT_ID}/${CLUSTER_ID}/floaty | \
+  jq -r '.data.data.iam_key')
+
+vault kv delete clusters/kv/${TENANT_ID}/${CLUSTER_ID}/floaty
+----
+
+. Revoke the old Floaty access key
++
+[IMPORTANT]
+====
+Don't remove the old Floaty API key before you've ensured that the new API key has been rolled out on the LBs.
+Otherwise, Floaty won't be able to migrate the Elastic IPs between the two LBs until you roll out the new key.
+====
++
+.Print out the Terraform-managed key
+[source,bash]
+----
+NEW_FLOATY_KEY=$(terraform state show "module.cluster.module.lb.exoscale_iam_access_key.floaty" |\
+  grep id | cut -d'=' -f2 | tr -d ' "\r\n')
+echo "Terraform-managed key: ${NEW_FLOATY_KEY}"
+----
++
+.Revoke the old key
+[source,bash]
+----
+exo iam access-key revoke "${OLD_FLOATY_KEY}"
+----
