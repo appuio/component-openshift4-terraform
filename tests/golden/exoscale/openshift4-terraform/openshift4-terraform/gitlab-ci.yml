@@ -1,0 +1,62 @@
+apply:
+  dependencies:
+    - plan
+  environment:
+    name: production
+  only:
+    - master
+  script:
+    - apk add --no-cache curl
+    - export GIT_ASKPASS=${TF_ROOT}/git-askpass.sh
+    - gitlab-terraform apply
+  stage: deploy
+  variables:
+    EXOSCALE_API_KEY: ${EXOSCALE_API_KEY_RW}
+    EXOSCALE_API_SECRET: ${EXOSCALE_API_SECRET_RW}
+  when: manual
+default:
+  before_script:
+    - cd ${TF_ROOT}
+    - gitlab-terraform init
+  cache:
+    key: ${CI_PIPELINE_ID}
+    paths:
+      - ${TF_ROOT}/.terraform/modules
+      - ${TF_ROOT}/.terraform/plugins
+  image: registry.gitlab.com/gitlab-org/terraform-images/releases/terraform:1.3.1
+  tags:
+    - mytag
+format:
+  before_script: []
+  cache: {}
+  script:
+    - terraform fmt -recursive -diff -check ${TF_ROOT}
+  stage: validate
+plan:
+  artifacts:
+    expire_in: 1 week
+    name: plan
+    paths:
+      - ${TF_ROOT}/plan.cache
+    reports:
+      terraform: ${TF_ROOT}/plan.json
+  script:
+    - gitlab-terraform plan
+    - gitlab-terraform plan-json
+  stage: plan
+stages:
+  - validate
+  - plan
+  - deploy
+validate:
+  script:
+    - gitlab-terraform validate
+  stage: validate
+variables:
+  EXOSCALE_API_KEY: ${EXOSCALE_API_KEY_RO}
+  EXOSCALE_API_SECRET: ${EXOSCALE_API_SECRET_RO}
+  TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/cluster
+  TF_ROOT: ${CI_PROJECT_DIR}/manifests/openshift4-terraform
+  TF_VAR_control_vshn_net_token: ${CONTROL_VSHN_NET_TOKEN}
+  TF_VAR_lb_exoscale_api_key: ${EXOSCALE_FLOATY_KEY}
+  TF_VAR_lb_exoscale_api_secret: ${EXOSCALE_FLOATY_SECRET}

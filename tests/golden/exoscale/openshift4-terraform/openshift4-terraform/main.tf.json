@@ -1,0 +1,18 @@
+{
+  "module": {
+    "cluster": {
+      "base_domain": "exoscale.ch",
+      "bootstrap_bucket": "https://sos-ch-dk-2.exo.io/c-green-test-1234-bootstrap",
+      "cluster_id": "c-green-test-1234",
+      "control_vshn_net_token": "${var.control_vshn_net_token}",
+      "hieradata_repo_user": "project_123_bot",
+      "ignition_ca": "SomeCertificateString",
+      "lb_exoscale_api_key": "${var.lb_exoscale_api_key}",
+      "lb_exoscale_api_secret": "${var.lb_exoscale_api_secret}",
+      "region": "ch-dk-2",
+      "rhcos_template": "my-iso-image",
+      "source": "git::https://github.com/appuio/terraform-openshift4-exoscale.git//?ref=v3.0.0-beta.1",
+      "ssh_key": "ssh-ed25519 AA..."
+    }
+  }
+}

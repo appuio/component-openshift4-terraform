@@ -1,0 +1,10 @@
+{
+  "output": {
+    "cluster_dns": {
+      "value": "${module.cluster.ns_records}"
+    },
+    "hieradata_mr": {
+      "value": "${module.cluster.hieradata_mr}"
+    }
+  }
+}
