@@ -1,0 +1,25 @@
+{
+  "template": "https://github.com/projectsyn/commodore-component-template.git",
+  "commit": "5911298a6b15ad810606d500e9eb7aee6157f64b",
+  "checkout": "main",
+  "context": {
+    "cookiecutter": {
+      "name": "openshift4-terraform",
+      "slug": "openshift4-terraform",
+      "parameter_key": "openshift4_terraform",
+      "test_cases": "cloudscale exoscale",
+      "add_lib": "n",
+      "add_pp": "n",
+      "add_golden": "y",
+      "add_matrix": "y",
+      "add_go_unit": "n",
+      "copyright_holder": "VSHN AG <info@vshn.ch>",
+      "copyright_year": "2021",
+      "github_owner": "appuio",
+      "github_name": "component-openshift4-terraform",
+      "github_url": "https://github.com/appuio/component-openshift4-terraform",
+      "_template": "https://github.com/projectsyn/commodore-component-template.git"
+    }
+  },
+  "directory": null
+}
