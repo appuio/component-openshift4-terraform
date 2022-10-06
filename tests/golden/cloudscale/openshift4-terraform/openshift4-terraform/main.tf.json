@@ -1,0 +1,18 @@
+{
+  "module": {
+    "cluster": {
+      "base_domain": "cloudscale.ch",
+      "cluster_id": "c-green-test-1234",
+      "control_vshn_net_token": "${var.control_vshn_net_token}",
+      "hieradata_repo_user": "project_123_bot",
+      "ignition_bootstrap": "${var.ignition_bootstrap}",
+      "ignition_ca": "SomeCertificateString",
+      "lb_cloudscale_api_secret": "${var.lb_cloudscale_api_secret}",
+      "region": "rma",
+      "source": "git::https://github.com/appuio/terraform-openshift4-cloudscale.git//?ref=v4.0.0",
+      "ssh_keys": [
+        "ssh-ed25519 AA..."
+      ]
+    }
+  }
+}

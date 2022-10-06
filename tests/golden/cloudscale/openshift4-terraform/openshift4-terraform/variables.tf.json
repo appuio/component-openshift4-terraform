@@ -1,0 +1,13 @@
+{
+  "variable": {
+    "control_vshn_net_token": {
+      "default": ""
+    },
+    "ignition_bootstrap": {
+      "default": ""
+    },
+    "lb_cloudscale_api_secret": {
+      "default": ""
+    }
+  }
+}
