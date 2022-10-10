@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 
+# pragma pylint: disable=line-too-long,missing-module-docstring,missing-function-docstring,invalid-name
+
 from __future__ import annotations
 
 import json
-import shlex
 import subprocess
 import sys
 
 from collections import namedtuple
+from typing import Optional
 
 dry_run = False
 
@@ -32,7 +34,10 @@ def read_state_json(raw_state: dict) -> dict:
 
 def terraform_state_pull() -> dict:
     res = subprocess.run(
-        ["terraform", "state", "pull"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        ["terraform", "state", "pull"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=True,
     )
     res.check_returncode()
     return read_state_json(json.loads(res.stdout))
@@ -47,26 +52,31 @@ def terraform_state_rm(res: str, log: bool = False):
         print(command)
         return
 
-    res = subprocess.run(command, capture_output=True, text=True, encoding="utf-8")
+    res = subprocess.run(
+        command, capture_output=True, text=True, encoding="utf-8", check=False
+    )
     res.check_returncode()
     if "Successfully removed" not in res.stdout:
         print(res.stdout, sys.stderr)
         raise ValueError(f"couldn't remove provided resource {res}")
 
 
-def terraform_import(res: str, id: str):
-    command = ["terraform", "import", res, id]
+def terraform_import(res: str, terraform_id: str):
+    command = ["terraform", "import", res, terraform_id]
     if dry_run:
         print(command)
         return
 
-    res = subprocess.run(command, capture_output=True, text=True, encoding="utf-8")
+    res = subprocess.run(
+        command, capture_output=True, text=True, encoding="utf-8", check=False
+    )
     res.check_returncode()
     if "Import prepared!" not in res.stdout:
         print(res.stdout, file=sys.stderr)
-        raise ValueError(f"couldn't import provided resource {res} from {id}")
+        raise ValueError(f"couldn't import provided resource {res} from {terraform_id}")
 
 
+# pylint: disable=too-many-arguments
 def migrate_simple_resource(
     state: dict,
     module: str,
@@ -76,6 +86,23 @@ def migrate_simple_resource(
     index: int = 0,
     zone: str = "",
 ):
+    """Migrate a single resource from `oldtype` to `newtype` by removing the old
+    type from the state with `terraform state rm` and importing the resource
+    with it's new type with `terraform import`. This function assumes that all
+    other parts of the resource (it's module, name and index) remain the same.
+
+    The function supports migrating resources at arbitrary indices (e.g. for
+    node groups, we can call this function repeatedly to migrate each node's
+    state) by providing `index`. By default the resource at index 0 is migrated.
+
+    For resources whose state identifiers don't have an index (i.e. which are
+    referred by `<module>.<type>.<name>` in the state, you can pass `index=-1`,
+    which omits the `[0]` from their state identifier. In this case, we still
+    read from `instances[0].attributes` to identify the resource's Exoscale ID.
+
+    If `zone` is given, we import the resource as `<Exoscale ID>@<zone>`,
+    otherwise we import it as `<Exoscale ID>`.
+    """
     # Assumption structure of resource has `attributes` array with at least one entry
     resid = (
         state[module]
@@ -294,6 +321,7 @@ def migrate_security_group_rules_lb(state: dict):
             terraform_import(resid, f"{sg_id}/{rspec.exo_id}")
 
 
+# pylint: disable=too-many-branches
 def main(state_json: Optional[str]):
     default_node_groups = ["master", "infra", "storage", "worker"]
 
@@ -358,7 +386,7 @@ def main(state_json: Optional[str]):
             migrate_security_group_rules_simple(state, group)
     if "exoscale_security_group_rules" in state["module.cluster.module.lb"]:
         terraform_state_rm(
-            f"module.cluster.module.lb.exoscale_security_group_rules.load_balancers",
+            "module.cluster.module.lb.exoscale_security_group_rules.load_balancers",
             log=True,
         )
         migrate_security_group_rules_lb(state)
@@ -448,8 +476,8 @@ def main(state_json: Optional[str]):
 
 
 if __name__ == "__main__":
-    state_json = None
+    state_json_name = None
     if len(sys.argv) >= 2:
-        state_json = sys.argv[1]
+        state_json_name = sys.argv[1]
         dry_run = True
-    main(state_json)
+    main(state_json_name)
