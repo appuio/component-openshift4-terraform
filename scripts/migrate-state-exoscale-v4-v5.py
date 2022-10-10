@@ -86,6 +86,23 @@ def migrate_simple_resource(
     index: int = 0,
     zone: str = "",
 ):
+    """Migrate a single resource from `oldtype` to `newtype` by removing the old
+    type from the state with `terraform state rm` and importing the resource
+    with it's new type with `terraform import`. This function assumes that all
+    other parts of the resource (it's module, name and index) remain the same.
+
+    The function supports migrating resources at arbitrary indices (e.g. for
+    node groups, we can call this function repeatedly to migrate each node's
+    state) by providing `index`. By default the resource at index 0 is migrated.
+
+    For resources whose state identifiers don't have an index (i.e. which are
+    referred by `<module>.<type>.<name>` in the state, you can pass `index=-1`,
+    which omits the `[0]` from their state identifier. In this case, we still
+    read from `instances[0].attributes` to identify the resource's Exoscale ID.
+
+    If `zone` is given, we import the resource as `<Exoscale ID>@<zone>`,
+    otherwise we import it as `<Exoscale ID>`.
+    """
     # Assumption structure of resource has `attributes` array with at least one entry
     resid = (
         state[module]
