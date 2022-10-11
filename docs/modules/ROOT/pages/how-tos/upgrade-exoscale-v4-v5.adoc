@@ -51,7 +51,7 @@ If that's not the case, update the component version to v5.x before compiling th
 
 . Update cluster configuration to use new Exoscale compute instance type identifiers.
 +
-The new Exoscale `compute_instance` Terraform resource uses different identifiers to specify instance type.
+The new Exoscale `compute_instance` Terraform resource uses different identifiers to specify instance types.
 We've modified the Terraform module to use different variable names for the instance types in the new version.
 If you haven't customized instance types for your cluster, you can skip this step.
 +
