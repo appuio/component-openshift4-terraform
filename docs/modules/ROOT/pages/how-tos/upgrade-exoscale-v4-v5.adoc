@@ -51,15 +51,17 @@ If that's not the case, update the component version to v5.x before compiling th
 
 . Update cluster configuration to use new Exoscale compute instance type identifiers.
 +
-The new Exoscale `compute_instance` Terraform resource uses different identifiers to specify instance types.
+The new `exoscale_compute_instance` Terraform resource uses different identifiers to specify instance types.
 We've modified the Terraform module to use different variable names for the instance types in the new version.
 If you haven't customized instance types for your cluster, you can skip this step.
 +
 Update your cluster configuration to replace the following parameters:
++
 * `infra_size` -> `infra_type`
 * `storage_size` -> `storage_type`
 * `worker_size` -> `worker_type`
-* `additional_worker_groups[*].size` -> `additional_worker_groups[*].type`
+* `additional_worker_groups[\*].size` -> `additional_worker_groups[*].type`
+
 +
 The new resource uses identifiers of form `<family>.<size>`, for example `Extra-large` is now `standard.extra-large`.
 See `exo compute instance-type list` for the list of all types.
