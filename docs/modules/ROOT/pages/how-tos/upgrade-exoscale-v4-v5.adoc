@@ -61,6 +61,8 @@ Update your cluster configuration to replace the following parameters:
 * `storage_size` -> `storage_type`
 * `worker_size` -> `worker_type`
 * `additional_worker_groups[\*].size` -> `additional_worker_groups[*].type`
+* if you were using `additional_affinity_group_ids` to select a dedicated hypervisor:
+  `additional_affinity_group_ids` -> `deploy_target_id`
 
 +
 The new resource uses identifiers of form `<family>.<size>`, for example `Extra-large` is now `standard.extra-large`.
