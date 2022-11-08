@@ -92,17 +92,28 @@ TIP: You need the Hieradata repo token so that Terraform can access the LB hiera
 ----
 export EXOSCALE_API_KEY=EXO... <1>
 export EXOSCALE_API_SECRET=... <2>
-
-cat <<EOF > ./terraform.env
-EXOSCALE_API_KEY
-EXOSCALE_API_SECRET
-HIERADATA_REPO_TOKEN
-EOF
 ----
 <1> Replace with your API key
 <2> Replace with your API secret
 +
 TIP: You need the Exoscale credentials so that Terraform can refresh the state.
+
+. Setup Git author information and create the Terraform environment file.
+The Git author info is required so that Terraform can commit the hieradata changes.
++
+[source,bash]
+----
+export GIT_AUTHOR_NAME=$(git config --global author.name)
+export GIT_AUTHOR_EMAIL=$(git config --global author.email)
+
+cat <<EOF > ./terraform.env
+EXOSCALE_API_KEY
+EXOSCALE_API_SECRET
+HIERADATA_REPO_TOKEN
+GIT_AUTHOR_NAME
+GIT_AUTHOR_EMAIL
+EOF
+----
 
 . Setup Terraform
 +
