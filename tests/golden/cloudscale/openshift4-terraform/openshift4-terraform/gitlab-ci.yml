@@ -22,7 +22,7 @@ default:
     paths:
       - ${TF_ROOT}/.terraform/modules
       - ${TF_ROOT}/.terraform/plugins
-  image: registry.gitlab.com/gitlab-org/terraform-images/releases/terraform:1.3.3
+  image: registry.gitlab.com/gitlab-org/terraform-images/releases/terraform:1.3.4
   tags:
     - mytag
 format:
