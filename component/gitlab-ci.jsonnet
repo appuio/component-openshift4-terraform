@@ -20,6 +20,8 @@ local cloud_specific_variables = {
     default: {
       EXOSCALE_API_KEY: '${EXOSCALE_API_KEY_RO}',
       EXOSCALE_API_SECRET: '${EXOSCALE_API_SECRET_RO}',
+      TF_VAR_lb_exoscale_api_key: '${EXOSCALE_FLOATY_KEY}',
+      TF_VAR_lb_exoscale_api_secret: '${EXOSCALE_FLOATY_SECRET}',
       TF_VAR_control_vshn_net_token: '${CONTROL_VSHN_NET_TOKEN}',
       [if std.objectHas(git, 'username') then 'GIT_AUTHOR_NAME']: git.username,
       [if std.objectHas(git, 'email') then 'GIT_AUTHOR_EMAIL']: git.email,
