@@ -1,0 +1,7 @@
+{
+  "variable": {
+    "control_vshn_net_token": {
+      "default": ""
+    }
+  }
+}

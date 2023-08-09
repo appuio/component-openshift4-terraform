@@ -1,13 +1,13 @@
 {
   "template": "https://github.com/projectsyn/commodore-component-template.git",
-  "commit": "3e1ac242633b3345621ba9f2b72f8dfea8e6ac4a",
+  "commit": "c0b936bd6ce4f7bfefa50fc876431ffbd9e8cdd2",
   "checkout": "main",
   "context": {
     "cookiecutter": {
       "name": "openshift4-terraform",
       "slug": "openshift4-terraform",
       "parameter_key": "openshift4_terraform",
-      "test_cases": "cloudscale exoscale",
+      "test_cases": "cloudscale exoscale exoscale-v3",
       "add_lib": "n",
       "add_pp": "n",
       "add_golden": "y",

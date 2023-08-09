@@ -36,21 +36,25 @@ local tf_1_3 =
 
 // This evaluates to a boolean indicating whether the configured combination
 // of Terraform version, module version, and cloud provider is supported.
-local supported_module_version =
+local tfModuleMajorVersion =
   local verParts = std.split(params.version, '.');
   if std.length(verParts) < 3 then
-    // probably not a version, just say it's supported
-    true
+    // probably not a tagged version, just return the minimum supported
+    // version for Terraform 1.3
+    module_cutoff_major_versions[params.provider]
   else
-    local paramsMajor = std.parseInt(std.lstripChars(verParts[0], 'v'));
-    if tf_1_3 then
-      // for Terraform >= 1.3.0 we need at least the cutoff module major
-      // version
-      paramsMajor >= module_cutoff_major_versions[params.provider]
-    else
-      // for Terraform < 1.3.0 we need a module major version < the cutoff
-      // version
-      paramsMajor < module_cutoff_major_versions[params.provider];
+    std.parseInt(std.lstripChars(verParts[0], 'v'));
+
+local supported_module_version =
+  local paramsMajor = tfModuleMajorVersion;
+  if tf_1_3 then
+    // for Terraform >= 1.3.0 we need at least the cutoff module major
+    // version
+    paramsMajor >= module_cutoff_major_versions[params.provider]
+  else
+    // for Terraform < 1.3.0 we need a module major version < the cutoff
+    // version
+    paramsMajor < module_cutoff_major_versions[params.provider];
 
 // Configure Terraform input variables which are provided at runtime
 local input_vars = {
@@ -66,16 +70,17 @@ local input_vars = {
     },
   },
   exoscale: {
+    control_vshn_net_token: {
+      default: '',
+    },
+  } + if tfModuleMajorVersion > 3 then {
     lb_exoscale_api_key: {
       default: '',
     },
     lb_exoscale_api_secret: {
       default: '',
     },
-    control_vshn_net_token: {
-      default: '',
-    },
-  },
+  } else {},
 };
 
 // Configure Terraform outputs
