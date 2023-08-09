@@ -1,0 +1,17 @@
+parameters:
+  # Provide fake facts for Exoscale/CH-DK-2
+  facts:
+    cloud: exoscale
+    region: ch-dk-2
+  openshift4_terraform:
+    gitlab_ci:
+      tags: ["mytag"]
+    version: v3.3.0
+    terraform_variables:
+      base_domain: exoscale.ch
+      ignition_ca: SomeCertificateString
+      rhcos_template: my-iso-image
+      ssh_key: ssh-ed25519 AA...
+      bootstrap_bucket: https://sos-${facts:region}.exo.io/${cluster:name}-bootstrap
+      control_vshn_net_token: asdf...
+      hieradata_repo_user: project_123_bot
