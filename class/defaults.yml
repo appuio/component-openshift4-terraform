@@ -1,7 +1,7 @@
 parameters:
   openshift4_terraform:
     =_tf_module_version:
-      cloudscale: v4.1.0
+      cloudscale: v4.2.0
       exoscale: v4.0.0
     images:
       terraform:
