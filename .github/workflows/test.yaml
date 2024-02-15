@@ -34,7 +34,6 @@ jobs:
         instance:
           - cloudscale
           - exoscale
-          - exoscale-v3
           - exoscale-v4
     defaults:
       run:
@@ -52,7 +51,6 @@ jobs:
         instance:
           - cloudscale
           - exoscale
-          - exoscale-v3
           - exoscale-v4
     defaults:
       run:
