@@ -1,0 +1,290 @@
+= Upgrade Exoscale clusters to component version v7
+
+When migrating to component version v7, the following breaking changes in `terraform-openshift4-exoscale` v5 require manual changes to the Terraform state of existing clusters:
+
+* https://github.com/appuio/terraform-openshift4-exoscale/pull/87[Change default root disk size to 100Gi^]
+* https://github.com/appuio/terraform-openshift4-exoscale/pull/91[Manage Floaty IAMv3 credentials in Terraform^]
+
+IMPORTANT: This guide assumes that you've already upgraded component `openshift4-terraform` to a v7 version for the cluster you're migrating.
+
+[NOTE]
+====
+The guide applies for upgrading to component version v7 from component version v5 or v6.
+Where necessary, we provide specific information based on the version you're upgrading from.
+====
+
+== Prerequisites
+
+TODO: Update
+
+You need to be able to execute the following CLI tools locally:
+
+* `docker`
+* `yq` https://github.com/mikefarah/yq[yq YAML processor] (Version 4 or newer)
+* `jq`
+* `vault` https://www.vaultproject.io/docs/commands[Vault CLI]
+* `exo` >= `v1.75.0` https://github.com/exoscale/cli[Exoscale CLI]
+
+== Setup environment
+
+. Access to API
++
+[source,bash]
+----
+# For example: https://api.syn.vshn.net
+# IMPORTANT: do NOT add a trailing `/`. Commands below will fail.
+export COMMODORE_API_URL=<lieutenant-api-endpoint>
+
+export CLUSTER_ID=<lieutenant-cluster-id> # Looks like: c-<something>
+export TENANT_ID=$(curl -sH "Authorization: Bearer $(commodore fetch-token)" ${COMMODORE_API_URL}/clusters/${CLUSTER_ID} | jq -r .tenant)
+
+# From https://git.vshn.net/-/profile/personal_access_tokens, "api" scope is sufficient
+export GITLAB_TOKEN=<gitlab-api-token>
+export GITLAB_USER=<gitlab-user-name>
+----
+
+. Connect with Vault
++
+[source,bash]
+----
+export VAULT_ADDR=https://vault-prod.syn.vshn.net
+vault login -method=oidc
+----
+
+== Update cluster configuration
+
+. Verify that your cluster uses component `openshift4-terraform` v7.
+If that's not the case, update the component version to v7.x before compiling the cluster catalog.
+
+. Compile the cluster catalog to create a local working directory
++
+[source,bash]
+----
+commodore catalog compile "${CLUSTER_ID}"
+----
+
+. Update cluster configuration to ensure that Terraform doesn't try to shrink VM disks and remove any potential Terraform module version pins.
++
+[source,bash]
+----
+pushd "inventory/classes/${TENANT_ID}"
+
+yq -i 'del(.parameters.openshift4_terraform.version)' "${CLUSTER_ID}.yml" <1>
+yq -i 'with(.parameters.openshift4_terraform.terraform_variables;
+  select(.|keys|all_c(. != "root_disk_size")) | .root_disk_size = 120)' \
+  "${CLUSTER_ID}.yml" <2>
+
+git commit -am "Update Terraform configuration for cluster ${CLUSTER_ID}" <3>
+git push
+
+popd
+----
+<1> Delete the `terraform-openshift4-exoscale` module version override, if it's present.
+<2> `terraform-openshift4-exoscale` versions < v5 used 120Gi as the default root disk size.
+We need to ensure that all existing clusters set the `root_disk_size` Terraform variable to ensure that Terraform won't try to shrink VM disks.
+<3> The `yq` expression shouldn't overwrite existing overrides for `root_disk_size`, but we recommend verifying the change before committing it.
+You may want to only commit the non-whitespace subset of the changes, since `yq` will delete any empty lines in the cluster configuration file.
+
+. Compile the cluster catalog again to apply the changed value for `root_disk_size` in the catalog.
++
+[source,bash]
+----
+commodore catalog compile "${CLUSTER_ID}"
+----
+
+== Migrate Terraform state
+
+. Fetch hieradata repo token from Vault
++
+[source,bash]
+----
+export HIERADATA_REPO_TOKEN=$(vault kv get \
+  -format=json "clusters/kv/lbaas/hieradata_repo_token" | jq -r '.data.data.token')
+----
++
+TIP: You need the Hieradata repo token so that Terraform can access the LB hieradata Git repo.
+
+. Create an Exoscale API key with role `unrestricted` for the cluster's organization from the https://portal.exoscale.com[Exoscale Console].
++
+TIP: You may need to create the `unrestricted` IAMv3 role with "Default Service Strategy" set to `allow` if such a role doesn't exist yet in the cluster's organization.
++
+[source,bash]
+----
+export EXOSCALE_API_KEY=EXO... <1>
+export EXOSCALE_API_SECRET=... <2>
+----
+<1> Replace with your API key
+<2> Replace with your API secret
++
+TIP: You need the Exoscale credentials so that Terraform can refresh the state.
+
+. Setup Git author information and create the Terraform environment file.
+The Git author info is required so that Terraform can commit the hieradata changes.
++
+[source,bash]
+----
+export GIT_AUTHOR_NAME=$(git config --global user.name)
+export GIT_AUTHOR_EMAIL=$(git config --global user.email)
+
+cat <<EOF > ./terraform.env
+EXOSCALE_API_KEY
+EXOSCALE_API_SECRET
+HIERADATA_REPO_TOKEN
+GIT_AUTHOR_NAME
+GIT_AUTHOR_EMAIL
+EOF
+----
+
+. Setup Terraform
++
+.Prepare Terraform execution environment
+[source,bash]
+----
+# Set terraform image and tag to be used
+tf_image=$(\
+  yq eval ".parameters.openshift4_terraform.images.terraform.image" \
+  dependencies/openshift4-terraform/class/defaults.yml)
+tf_tag=$(\
+  yq eval ".parameters.openshift4_terraform.images.terraform.tag" \
+  dependencies/openshift4-terraform/class/defaults.yml)
+
+# Generate the terraform alias
+base_dir=$(pwd)
+alias terraform='docker run -it --rm \
+  -e REAL_UID=$(id -u) \
+  --env-file ${base_dir}/terraform.env \
+  -w /tf \
+  -v $(pwd):/tf \
+  --ulimit memlock=-1 \
+  "${tf_image}:${tf_tag}" /tf/terraform.sh'
+
+export GITLAB_REPOSITORY_URL=$(curl -sH "Authorization: Bearer $(commodore fetch-token)" ${COMMODORE_API_URL}/clusters/${CLUSTER_ID} | jq -r '.gitRepo.url' | sed 's|ssh://||; s|/|:|')
+export GITLAB_REPOSITORY_NAME=${GITLAB_REPOSITORY_URL##*/}
+export GITLAB_CATALOG_PROJECT_ID=$(curl -sH "Authorization: Bearer ${GITLAB_TOKEN}" "https://git.vshn.net/api/v4/projects?simple=true&search=${GITLAB_REPOSITORY_NAME/.git}" | jq -r ".[] | select(.ssh_url_to_repo == \"${GITLAB_REPOSITORY_URL}\") | .id")
+export GITLAB_STATE_URL="https://git.vshn.net/api/v4/projects/${GITLAB_CATALOG_PROJECT_ID}/terraform/state/cluster"
+
+pushd catalog/manifests/openshift4-terraform/
+----
++
+.Initialize Terraform
+[source,bash]
+----
+terraform init \
+  "-backend-config=address=${GITLAB_STATE_URL}" \
+  "-backend-config=lock_address=${GITLAB_STATE_URL}/lock" \
+  "-backend-config=unlock_address=${GITLAB_STATE_URL}/lock" \
+  "-backend-config=username=${GITLAB_USER}" \
+  "-backend-config=password=${GITLAB_TOKEN}" \
+  "-backend-config=lock_method=POST" \
+  "-backend-config=unlock_method=DELETE" \
+  "-backend-config=retry_wait_min=5"
+----
+
+. Remove old Terraform-managed Floaty key from the Terraform state
++
+[IMPORTANT]
+====
+This step is only required if you're upgrading from `terraform-openshift4-exoscale` v3.
+
+While you can still execute these commands when upgrading from `terraform-openshift4-exoscale` v4, they will fail since such clusters don't use a Terraform-managed legacy Floaty key.
+====
++
+.Extract the old Terraform-managed Floaty API key from the state, so we can revoke it later
+[source,bash]
+----
+OLD_FLOATY_KEY=$(terraform state show "module.cluster.module.lb.exoscale_iam_access_key.floaty" |\
+  grep id | cut -d'=' -f2 | tr -d ' "\r\n')
+----
++
+.Ensure the old Terraform-managed Floaty IAM credentials don't get deleted by the next Terraform apply
+[source,bash]
+----
+terraform state rm module.cluster.module.lb.exoscale_iam_access_key.floaty
+----
+
+. Verify the Terraform state using `plan`
++
+[source,bash]
+----
+terraform plan
+----
++
+You can expect the following changes:
++
+* The new field `private` will be set to `false` on all compute instances
+* Direct SSH access to the cluster VMs will be removed:
+** `module.cluster.security_group_rule.all_machines_ssh_v4` and `module.cluster.security_group_rule.all_machines_ssh_v6` will be destroyed
+** `module.cluster.security_group_rule.all_machines_ssh`, `module.cluster.module.lb.exoscale_security_group_rule.load_balancers_ssh_v4`, and `module.cluster.module.lb.exoscale_security_group_rule.load_balancers_ssh_v6` will be created
+* The new managed Floaty IAMv3 Exoscale credentials (role and key) will be created
+* The LB hieradata will be updated to use the new IAMv3 Floaty access key
+
+. If you're satisfied with the pending changes, you can apply them.
++
+[source,bash]
+----
+terraform apply
+----
+
+. Merge the hieradata MR.
+
+. Run Puppet on the cluster's LBs, so that you're using the new IAMv3 Floaty API key.
++
+[source,bash]
+----
+for id in 0 1; do
+  lb_fqdn=$(terraform state show "module.cluster.module.lb.exoscale_domain_record.lb[$id]" | grep hostname | cut -d'=' -f2 | tr -d ' "\r\n')
+  echo "${lb_fqdn}"
+  ssh "${lb_fqdn}" sudo puppetctl run
+done
+----
+
+. Fetch and then remove the old Floaty API key from Vault
++
+[IMPORTANT]
+====
+Skip this step if you're upgrading from `terraform-openshift4-exoscale` v3.
+For such an upgrade you should already have extracted and removed a legacy API key from the Terraform state.
+====
++
+[source,bash]
+----
+OLD_FLOATY_KEY=$(vault kv get -format=json \
+  clusters/kv/${TENANT_ID}/${CLUSTER_ID}/floaty | \
+  jq -r '.data.data.iam_key')
+
+vault kv delete clusters/kv/${TENANT_ID}/${CLUSTER_ID}/floaty
+----
+
+. Revoke the old Floaty access key
++
+[IMPORTANT]
+====
+Don't remove the old Floaty API key before you've ensured that the new API key has been rolled out on the LBs.
+Otherwise, Floaty won't be able to migrate the Elastic IPs between the two LBs until you roll out the new key.
+====
++
+.Print out the legacy key
+[source,bash]
+----
+echo "Legacy Floaty key: ${OLD_FLOATY_KEY}"
+----
++
+.Print out the Terraform-managed IAMv3 key
+[source,bash]
+----
+NEW_FLOATY_KEY=$(terraform state show "module.cluster.module.lb.exoscale_iam_api_key.floaty" |\
+  grep ' id' | cut -d'=' -f2 | tr -d ' "\r\n')
+echo "Terraform-managed key: ${NEW_FLOATY_KEY}"
+----
++
+.Revoke the Terraform-managed legacy key
+[source,bash]
+----
+exo iam access-key revoke "${OLD_FLOATY_KEY}"
+----
++
+.Revoke the manually provisioned IAMv3 key
+[source,bash]
+----
+exo iam api-key delete "${OLD_FLOATY_KEY}"
+----
