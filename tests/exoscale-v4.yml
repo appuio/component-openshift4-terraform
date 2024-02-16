@@ -6,7 +6,7 @@ parameters:
   openshift4_terraform:
     gitlab_ci:
       tags: ["mytag"]
-    version: v3.3.0
+    version: v4.0.0
     terraform_variables:
       base_domain: exoscale.ch
       ignition_ca: SomeCertificateString

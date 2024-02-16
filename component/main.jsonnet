@@ -73,7 +73,7 @@ local input_vars = {
     control_vshn_net_token: {
       default: '',
     },
-  } + if tfModuleMajorVersion > 3 then {
+  } + if tfModuleMajorVersion > 3 && tfModuleMajorVersion < 5 then {
     lb_exoscale_api_key: {
       default: '',
     },

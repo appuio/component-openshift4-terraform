@@ -7,11 +7,9 @@
       "control_vshn_net_token": "${var.control_vshn_net_token}",
       "hieradata_repo_user": "project_123_bot",
       "ignition_ca": "SomeCertificateString",
-      "lb_exoscale_api_key": "${var.lb_exoscale_api_key}",
-      "lb_exoscale_api_secret": "${var.lb_exoscale_api_secret}",
       "region": "ch-dk-2",
       "rhcos_template": "my-iso-image",
-      "source": "git::https://github.com/appuio/terraform-openshift4-exoscale.git//?ref=v4.0.0",
+      "source": "git::https://github.com/appuio/terraform-openshift4-exoscale.git//?ref=v5.0.0",
       "ssh_key": "ssh-ed25519 AA..."
     }
   }

@@ -53,4 +53,4 @@ TERRAFORM_IMAGE ?= $(shell grep image: class/defaults.yml | sed 's/ *//g' | cut 
 TERRAFORM_CMD   ?= $(DOCKER_CMD) $(DOCKER_ARGS) $(compiled_volume) $(extra_args) $(TERRAFORM_IMAGE)
 
 instance ?= cloudscale
-test_instances = tests/cloudscale.yml tests/exoscale.yml tests/exoscale-v3.yml
+test_instances = tests/cloudscale.yml tests/exoscale.yml tests/exoscale-v4.yml
