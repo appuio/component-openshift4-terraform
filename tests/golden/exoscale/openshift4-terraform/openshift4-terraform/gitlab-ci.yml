@@ -10,9 +10,7 @@ apply:
     - export GIT_ASKPASS=${TF_ROOT}/git-askpass.sh
     - gitlab-terraform apply
   stage: deploy
-  variables:
-    EXOSCALE_API_KEY: ${EXOSCALE_API_KEY_RW}
-    EXOSCALE_API_SECRET: ${EXOSCALE_API_SECRET_RW}
+  variables: {}
   when: manual
 default:
   before_script:
@@ -53,8 +51,8 @@ validate:
     - gitlab-terraform validate
   stage: validate
 variables:
-  EXOSCALE_API_KEY: ${EXOSCALE_API_KEY_RO}
-  EXOSCALE_API_SECRET: ${EXOSCALE_API_SECRET_RO}
+  EXOSCALE_API_KEY: ${EXOSCALE_API_KEY_RW}
+  EXOSCALE_API_SECRET: ${EXOSCALE_API_SECRET_RW}
   TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/cluster
   TF_ROOT: ${CI_PROJECT_DIR}/manifests/openshift4-terraform
   TF_VAR_control_vshn_net_token: ${CONTROL_VSHN_NET_TOKEN}
