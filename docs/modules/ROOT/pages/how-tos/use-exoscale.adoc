@@ -10,41 +10,9 @@ NOTE: The component currently assumes that the Git repositories live on a GitLab
 
 == Setup credentials
 
-. Set up three new API keys in https://portal.exoscale.com[portal.exoscale.com].
-Two of them are used for the Terraform pipeline.
-.. The first key should be created with the a read-only IAM role:
-+
-.Read-only role
-[source,json]
-----
-{
-  "name": "openshift4-terraform-ro",
-  "policy": {
-    "default-service-strategy": "deny",
-    "services": {
-      "compute": {
-        "type": "rules",
-        "rules": [
-          {
-            "action": "allow",
-            "expression": "matches(operation, '(get|list)-.*')"
-          }
-        ]
-      },
-      "dns": {
-        "type": "rules",
-        "rules": [
-          {
-            "action": "allow",
-            "expression": "matches(operation, '(get|list)-.*')"
-          }
-        ]
-      }
-    }
-  }
-}
-----
-.. The second key can be created with a role with full permissions
+. Set up two new API keys in https://portal.exoscale.com[portal.exoscale.com].
+One of them is used for the Terraform pipeline.
+.. The first key needs to be created with a role with full permissions
 +
 .Full permissions role configuration
 [source,json]
@@ -54,7 +22,7 @@ Two of them are used for the Terraform pipeline.
   "policy": { "default-service-strategy": "allow" }
 }
 ----
-.. The third key needs the following IAM role (this key will be deployed onto the LBs for https://github.com/vshn/floaty[Floaty]):
+.. The second key needs the following IAM role (this key will be deployed onto the LBs for https://github.com/vshn/floaty[Floaty]):
 +
 .Floaty IAM role
 [source,json]
@@ -118,8 +86,6 @@ Please note that the Terraform module currently only supports the https://git.vs
   - "Settings > CI/CD > General pipelines > Configuration file" +
     `manifests/openshift4-terraform/gitlab-ci.yml`
   - "Settings > CI/CD > Variables"
-    * `EXOSCALE_API_SECRET_RO`
-    * `EXOSCALE_API_KEY_RO`
     * `EXOSCALE_API_SECRET_RW`
     * `EXOSCALE_API_KEY_RW`
     * `EXOSCALE_FLOATY_KEY`
