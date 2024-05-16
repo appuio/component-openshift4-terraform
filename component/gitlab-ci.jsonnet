@@ -7,15 +7,13 @@ local version = import 'version.libsonnet';
 local cloud_specific_variables = {
   cloudscale: {
     default: {
-      CLOUDSCALE_API_TOKEN: '${CLOUDSCALE_TOKEN_RO}',
+      CLOUDSCALE_API_TOKEN: '${CLOUDSCALE_TOKEN_RW}',
       TF_VAR_lb_cloudscale_api_secret: '${CLOUDSCALE_FLOATY_SECRET}',
       TF_VAR_control_vshn_net_token: '${CONTROL_VSHN_NET_TOKEN}',
       [if std.objectHas(git, 'username') then 'GIT_AUTHOR_NAME']: git.username,
       [if std.objectHas(git, 'email') then 'GIT_AUTHOR_EMAIL']: git.email,
     },
-    apply: {
-      CLOUDSCALE_API_TOKEN: '${CLOUDSCALE_TOKEN_RW}',
-    },
+    apply: {},
   },
   exoscale: {
     default: {
