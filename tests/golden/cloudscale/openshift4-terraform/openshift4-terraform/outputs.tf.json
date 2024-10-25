@@ -5,6 +5,9 @@
     },
     "hieradata_mr": {
       "value": "${module.cluster.hieradata_mr}"
+    },
+    "region": {
+      "value": "${module.cluster.region}"
     }
   }
 }

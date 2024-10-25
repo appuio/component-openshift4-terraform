@@ -74,12 +74,13 @@ local terraform_config =
         },
       },
     },
+    local mergedOutputs = params.additional_outputs + outputs[params.provider],
     'outputs.tf': {
       output: {
         [out]: {
-          value: outputs[params.provider][out],
+          value: mergedOutputs[out],
         }
-        for out in std.objectFields(outputs[params.provider])
+        for out in std.objectFields(mergedOutputs)
       },
     },
     'variables.tf': {

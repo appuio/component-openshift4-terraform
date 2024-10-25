@@ -12,6 +12,7 @@ parameters:
       git: {}
     provider: ${facts:cloud}
     version: ${openshift4_terraform:_tf_module_version:${openshift4_terraform:provider}}
+    additional_outputs: {}
     terraform_variables:
       source: git::https://github.com/appuio/terraform-openshift4-${openshift4_terraform:provider}.git//?ref=${openshift4_terraform:version}
       cluster_id: ${cluster:name}
