@@ -62,6 +62,26 @@ Terraform input variables for the selected Terraform module (see parameter `prov
 They're passed to the module without any further processing.
 The variables are merged with the defaults, unless overridden.
 
+
+== `additional_outputs`
+
+[horizontal]
+type:: object
+default:: `{}`
+example::
++
+[source,yaml]
+----
+additional_outputs:
+  my_output: '\${module.cluster.my_output}'
+----
+
+Additional outputs that are passed to the Terraform module.
+The outputs are merged with the defaults, defaults can't be overridden.
+The keys are then name of the output, the value should contain a reference to a output variable from the Terraform module.
+Additional escaping might be needed since Terraform variables use the same syntax as reclass; see the example above.
+
+
 == `version`
 
 [horizontal]
