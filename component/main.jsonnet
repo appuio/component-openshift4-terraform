@@ -44,7 +44,16 @@ local common_outputs = {
   hieradata_mr: '${module.cluster.hieradata_mr}',
 };
 local outputs = {
-  cloudscale: common_outputs,
+  cloudscale: common_outputs {
+    'master-machines_yml': '${module.cluster.master-machines_yml}',
+    'master-machineset_yml': '${module.cluster.master-machineset_yml}',
+    'infra-machines_yml': '${module.cluster.infra-machines_yml}',
+    'infra-machineset_yml': '${module.cluster.infra-machineset_yml}',
+    'worker-machines_yml': '${module.cluster.worker-machines_yml}',
+    'worker-machineset_yml': '${module.cluster.worker-machineset_yml}',
+    'additional-worker-machines_yml': '${module.cluster.additional-worker-machines_yml}',
+    'additional-worker-machinesets_yml': '${module.cluster.additional-worker-machinesets_yml}',
+  },
   exoscale: common_outputs,
 };
 
