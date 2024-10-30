@@ -1,13 +1,37 @@
 {
   "output": {
+    "additional-worker-machines_yml": {
+      "value": "${module.cluster.additional-worker-machines_yml}"
+    },
+    "additional-worker-machinesets_yml": {
+      "value": "${module.cluster.additional-worker-machinesets_yml}"
+    },
     "cluster_dns": {
       "value": "${module.cluster.dns_entries}"
     },
     "hieradata_mr": {
       "value": "${module.cluster.hieradata_mr}"
     },
+    "infra-machines_yml": {
+      "value": "${module.cluster.infra-machines_yml}"
+    },
+    "infra-machineset_yml": {
+      "value": "${module.cluster.infra-machineset_yml}"
+    },
+    "master-machines_yml": {
+      "value": "${module.cluster.master-machines_yml}"
+    },
+    "master-machineset_yml": {
+      "value": "${module.cluster.master-machineset_yml}"
+    },
     "region": {
       "value": "${module.cluster.region}"
+    },
+    "worker-machines_yml": {
+      "value": "${module.cluster.worker-machines_yml}"
+    },
+    "worker-machineset_yml": {
+      "value": "${module.cluster.worker-machineset_yml}"
     }
   }
 }
