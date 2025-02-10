@@ -8,6 +8,7 @@
 * xref:how-tos/upgrade-exoscale-v3-v4.adoc[Upgrade Exoscale clusters from component version v3 to v4]
 * xref:how-tos/upgrade-exoscale-v4-v5.adoc[Upgrade Exoscale clusters from component version v4 to v5]
 * xref:how-tos/upgrade-exoscale-to-v7.adoc[Upgrade Exoscale clusters to component version v7]
+* xref:how-tos/upgrade-exoscale-to-v8.adoc[Upgrade Exoscale clusters to component version v8]
 * xref:how-tos/migrate-from-openshift4-cloudscale.adoc[Migrate from component `openshift4-cloudscale`]
 
 .Technical reference
