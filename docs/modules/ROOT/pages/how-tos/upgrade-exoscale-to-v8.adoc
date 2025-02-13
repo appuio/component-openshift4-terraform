@@ -1,0 +1,23 @@
+= Upgrade Exoscale clusters to component version v8
+
+When upgrading to component version v8 for Exoscale clusters, the following breaking change requires manual changes in the Project Syn config of existing clusters:
+
+* https://github.com/appuio/terraform-openshift4-exoscale/pull/98[Use instance pools for infra and worker node groups]
+
+NOTE: We recommend applying the config changes outlined in this guide *before* upgrading to component version v8
+
+TIP: We will publish a guide to migrate existing clusters to use instance pools in a future version of this component.
+
+== Steps
+
+. Get a clone of the tenant repo of the clusters that you want to upgrade to component version v8.
+
+. Make sure component `openshift4-terraform` is updated to at least v7.6.0 so the variable `use_instancepools` exists
+
+. Set `parameters.openshift4_terraform.variables.use_instancepools` to `false` for existing clusters.
++
+TIP: If you're not planning to switch to instance pools for future clusters, you can set the variable for the whole tenant in `common.yml`.
+
+. Commit the changes
+
+Now you're ready to upgrade the component to v8 without changes to existing clusters.
