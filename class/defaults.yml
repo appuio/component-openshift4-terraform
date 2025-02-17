@@ -3,8 +3,8 @@ parameters:
     =_metadata:
       multi_tenant: false
     =_tf_module_version:
-      cloudscale: v4.5.2
-      exoscale: v6.0.0
+      cloudscale: v4.6.0
+      exoscale: v6.1.0
     images:
       terraform:
         image: registry.gitlab.com/gitlab-org/terraform-images/releases/terraform
