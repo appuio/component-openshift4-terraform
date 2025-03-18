@@ -1,0 +1,21 @@
+= Upgrade Exoscale clusters to component version v9
+
+When upgrading to component version v9 for Exoscale clusters, the following breaking change may require manual changes in the Project Syn config of existing clusters:
+
+* https://github.com/appuio/terraform-openshift4-exoscale/pull/105[Switch infra nodes to non-instancepool by default]
+
+IMPORTANT: The config changes outlined in this guide must be applied at the same time as the upgrade to component version v9.
+
+TIP: We will publish a guide to migrate existing clusters to use instance pools in a future version of this component.
+
+== Steps
+
+. Get a clone of the tenant repo of the clusters that you want to upgrade to component version v9.
+
+. Make sure component `openshift4-terraform` is updated to at least v9.0.0 so the variable `infra_use_instancepool` exists
+
+. Set `parameters.openshift4_terraform.variables.infra_use_instancepool` to `true` for existing clusters which have been setup with instancepools for the worker and infra nodes.
++
+TIP: The variable `infra_use_instancepool` has no effect for clusters which set variabl `use_instancepools` to `false`.
+
+. Commit the changes
