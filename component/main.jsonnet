@@ -50,7 +50,7 @@ local common_outputs = {
 };
 local outputs = {
   cloudscale: common_outputs {
-    'hieradata_mr': '${module.cluster.hieradata_mr}',
+    hieradata_mr: '${module.cluster.hieradata_mr}',
     'master-machines_yml': '${module.cluster.master-machines_yml}',
     'master-machineset_yml': '${module.cluster.master-machineset_yml}',
     'infra-machines_yml': '${module.cluster.infra-machines_yml}',
@@ -61,7 +61,7 @@ local outputs = {
     'additional-worker-machinesets_yml': '${module.cluster.additional-worker-machinesets_yml}',
   },
   exoscale: common_outputs {
-    'hieradata_mr': '${module.cluster.hieradata_mr}',
+    hieradata_mr: '${module.cluster.hieradata_mr}',
   },
   stackit: common_outputs,
 };
