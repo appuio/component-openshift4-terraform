@@ -7,7 +7,7 @@ The parent key for all of the following parameters is `openshift4_terraform`.
 [horizontal]
 type:: enum
 required:: Yes
-values:: `cloudscale`, `exoscale`
+values:: `cloudscale`, `exoscale`, `stackit`
 default:: `${facts:cloud}`
 
 This variable is used to select the Terraform module and a suitable default configuration for the specified cloud provider.
@@ -15,6 +15,7 @@ The supported providers are:
 
 - https://cloudscale.ch[Cloudscale.ch] -- https://github.com/appuio/terraform-openshift4-cloudscale[Terraform module]
 - https://exoscale.com[Exoscale] -- https://github.com/appuio/terraform-openshift4-exoscale[Terraform module]
+- https://stackit.cloud[STACKIT] -- https://github.com/appuio/terraform-openshift4-stackit[Terraform module]
 
 == `gitlab_ci.tags`
 
@@ -98,3 +99,4 @@ See examples in the how-to pages:
 
 * xref:how-tos/use-cloudscale.adoc[cloudscale.ch example]
 * xref:how-tos/use-exoscale.adoc[Exoscale example]
+* xref:how-tos/use-stackit.adoc[STACKIT example]
