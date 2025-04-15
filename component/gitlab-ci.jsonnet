@@ -28,6 +28,10 @@ local cloud_specific_variables = {
     } else {},
     apply: {},
   },
+  stackit: {
+    default: {},
+    apply: {},
+  },
 };
 
 local GitLabCI() = {

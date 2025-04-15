@@ -1,0 +1,15 @@
+{
+  "module": {
+    "cluster": {
+      "base_domain": "stackit.ch",
+      "cluster_id": "c-green-test-1234",
+      "ignition_bootstrap": "${var.ignition_bootstrap}",
+      "ignition_ca": "SomeCertificateString",
+      "image_id": "some-image-uuid",
+      "region": "eu01",
+      "source": "git::https://github.com/appuio/terraform-openshift4-stackit.git//?ref=v0.1.0",
+      "ssh_key": "ssh-ed25519 AA...",
+      "stackit_project_id": "some-project-uuid"
+    }
+  }
+}

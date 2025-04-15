@@ -1,3 +1,12 @@
-# Overwrite parameters here
-
-# parameters: {...}
+parameters:
+  # Provide fake facts for Exoscale/CH-DK-2
+  facts:
+    cloud: stackit
+    region: eu01
+  openshift4_terraform:
+    terraform_variables:
+      base_domain: stackit.ch
+      ignition_ca: SomeCertificateString
+      ssh_key: ssh-ed25519 AA...
+      image_id: some-image-uuid
+      stackit_project_id: some-project-uuid
