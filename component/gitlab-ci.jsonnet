@@ -29,7 +29,9 @@ local cloud_specific_variables = {
     apply: {},
   },
   stackit: {
-    default: {},
+    default: {
+      STACKIT_SERVICE_ACCOUNT_KEY_PATH: '${STACKIT_SERVICE_ACCOUNT_KEY}',
+    },
     apply: {},
   },
 };
