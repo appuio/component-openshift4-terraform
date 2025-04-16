@@ -9,6 +9,7 @@ local version = import 'version.libsonnet';
 local cluster_dns = {
   cloudscale: '${module.cluster.dns_entries}',
   exoscale: '${module.cluster.ns_records}',
+  stackit: '${module.cluster.ns_records}',
 };
 
 // Configure Terraform input variables which are provided at runtime
@@ -36,15 +37,20 @@ local input_vars = {
       default: '',
     },
   } else {},
+  stackit: {
+    ignition_bootstrap: {
+      default: '',
+    },
+  },
 };
 
 // Configure Terraform outputs
 local common_outputs = {
   cluster_dns: cluster_dns[params.provider],
-  hieradata_mr: '${module.cluster.hieradata_mr}',
 };
 local outputs = {
   cloudscale: common_outputs {
+    hieradata_mr: '${module.cluster.hieradata_mr}',
     'master-machines_yml': '${module.cluster.master-machines_yml}',
     'master-machineset_yml': '${module.cluster.master-machineset_yml}',
     'infra-machines_yml': '${module.cluster.infra-machines_yml}',
@@ -54,7 +60,10 @@ local outputs = {
     'additional-worker-machines_yml': '${module.cluster.additional-worker-machines_yml}',
     'additional-worker-machinesets_yml': '${module.cluster.additional-worker-machinesets_yml}',
   },
-  exoscale: common_outputs,
+  exoscale: common_outputs {
+    hieradata_mr: '${module.cluster.hieradata_mr}',
+  },
+  stackit: common_outputs,
 };
 
 // We want to pass through any provider-specific input variables (see above)

@@ -1,0 +1,7 @@
+{
+  "output": {
+    "cluster_dns": {
+      "value": "${module.cluster.ns_records}"
+    }
+  }
+}

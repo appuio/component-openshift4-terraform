@@ -9,6 +9,7 @@ local params = inv.parameters.openshift4_terraform;
 local module_cutoff_major_versions = {
   cloudscale: 4,
   exoscale: 3,
+  stackit: 0,
 };
 
 // This evaluates to a boolean indicating whether the configured Terraform
