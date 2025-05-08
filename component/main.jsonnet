@@ -59,6 +59,7 @@ local outputs = {
     'worker-machineset_yml': '${module.cluster.worker-machineset_yml}',
     'additional-worker-machines_yml': '${module.cluster.additional-worker-machines_yml}',
     'additional-worker-machinesets_yml': '${module.cluster.additional-worker-machinesets_yml}',
+    subnet_uuid: '${module.cluster.subnet_uuid}',
   },
   exoscale: common_outputs {
     hieradata_mr: '${module.cluster.hieradata_mr}',
