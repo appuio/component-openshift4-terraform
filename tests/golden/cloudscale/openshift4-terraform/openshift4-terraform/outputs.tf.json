@@ -27,6 +27,9 @@
     "region": {
       "value": "${module.cluster.region}"
     },
+    "router_vip": {
+      "value": "${module.cluster.router_vip}"
+    },
     "subnet_uuid": {
       "value": "${module.cluster.subnet_uuid}"
     },
