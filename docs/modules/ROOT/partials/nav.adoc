@@ -12,6 +12,7 @@
 * xref:how-tos/upgrade-exoscale-to-v8.adoc[Upgrade Exoscale clusters to component version v8]
 * xref:how-tos/upgrade-exoscale-to-v9.adoc[Upgrade Exoscale clusters to component version v9]
 * xref:how-tos/migrate-from-openshift4-cloudscale.adoc[Migrate from component `openshift4-cloudscale`]
+* xref:how-tos/migrate-cloudscale-router.adoc[Migrate the cloudscale router floating IP to cloudscale LBaaS]
 
 .Technical reference
 * xref:references/parameters.adoc[Parameters]
