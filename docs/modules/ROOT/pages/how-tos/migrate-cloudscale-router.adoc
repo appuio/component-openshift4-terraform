@@ -67,7 +67,7 @@ export HIERADATA_REPO_TOKEN=$(echo "${HIERADATA_REPO_SECRET}" | jq -r '.token')
 ----
 cloudscale_token=$(vault kv get \
   -format=json "clusters/kv/${TENANT_ID}/${CLUSTER_ID}/cloudscale")
-export CLOUDSCALE_TOKEN=$(echo $cloudscale_token | jq -r '.data.data.token')
+export CLOUDSCALE_API_TOKEN=$(echo $cloudscale_token | jq -r '.data.data.token')
 ----
 
 . Set the floaty API key Terraform variable from Vault
