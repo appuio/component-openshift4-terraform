@@ -280,6 +280,15 @@ terraform apply
 . Merge Hieradata MR
 +
 NOTE: This won't have an immediate effect since we've disabled Puppet on the LBs.
++
+[IMPORTANT]
+====
+Review this MR very carefully.
+The MR *must* remove the router floating IP in `profile_openshift4_gateway::floating_addresses`, if it was previously present.
+Additionally the MR will remove the router backends.
+
+Please be aware that in some setups, such as clusters which have the router exposed on internal IPs, the router backends may still be required after migrating the public ingress to a cloudscale LB instance.
+====
 
 . Switch back to Commodore working directory
 +
