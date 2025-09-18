@@ -3,7 +3,7 @@ parameters:
     =_metadata:
       multi_tenant: false
     =_tf_module_version:
-      cloudscale: v4.8.1
+      cloudscale: v4.8.2
       exoscale: v7.1.1
       stackit: v0.1.0
     images:
