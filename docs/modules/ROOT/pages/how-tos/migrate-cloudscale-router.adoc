@@ -92,7 +92,7 @@ commodore catalog compile "${CLUSTER_ID}"
 +
 [source,bash]
 ----
-kubectl --as=cluster-admin -n syn patch apps root --type=json \
+kubectl --as=system:admin -n syn patch apps root --type=json \
   -p '[{"op":"replace", "path":"/spec/syncPolicy", "value": {}}]'
 ----
 
@@ -123,10 +123,10 @@ commodore catalog compile ${CLUSTER_ID}
 +
 [source,bash]
 ----
-kubectl --as=cluster-admin apply -f catalog/manifests/cloudscale-loadbalancer-controller/00_namespace.yaml
+kubectl --as=system:admin apply -f catalog/manifests/cloudscale-loadbalancer-controller/00_namespace.yaml
 kapitan refs --reveal --refs-path catalog/refs -f catalog/manifests/cloudscale-loadbalancer-controller/10_secrets.yaml | \
-  kubectl --as=cluster-admin apply -f -
-kubectl --as=cluster-admin apply -Rf catalog/manifests/cloudscale-loadbalancer-controller/10_kustomize
+  kubectl --as=system:admin apply -f -
+kubectl --as=system:admin apply -Rf catalog/manifests/cloudscale-loadbalancer-controller/10_kustomize
 kubectl -n appuio-cloudscale-loadbalancer-controller \
   wait --for condition=available \
   deploy cloudscale-loadbalancer-controller-controller-manager
@@ -137,7 +137,7 @@ kubectl -n appuio-cloudscale-loadbalancer-controller \
 [source,bash]
 ----
 yq 'del(.spec.floatingIPAddresses)' catalog/manifests/cloudscale-loadbalancer-controller/20_loadbalancers.yaml | \
-  kubectl --as=cluster-admin apply -f -
+  kubectl --as=system:admin apply -f -
 ----
 
 . Wait for the cluster ingress to become reachable via the loadbalancer
@@ -146,7 +146,7 @@ yq 'del(.spec.floatingIPAddresses)' catalog/manifests/cloudscale-loadbalancer-co
 ----
 export LB_IP=""
 while [ "$LB_IP" == "" ]; do
-  export LB_IP=$(kubectl --as=cluster-admin -n appuio-cloudscale-loadbalancer-controller \
+  export LB_IP=$(kubectl --as=system:admin -n appuio-cloudscale-loadbalancer-controller \
     get loadbalancer ingress -oyaml | \
     yq '(.status.virtualIPAddresses[]|select(.address|contains("2a06")|not)|.address)//""')
   if [ "$LB_IP" == "" ]; then
@@ -325,7 +325,7 @@ commodore catalog compile ${CLUSTER_ID} --push -i
 +
 [source,bash]
 ----
-kubectl --as=cluster-admin -n syn patch apps root --type=json \
+kubectl --as=system:admin -n syn patch apps root --type=json \
   -p '[{
     "op":"replace",
     "path":"/spec/syncPolicy",
