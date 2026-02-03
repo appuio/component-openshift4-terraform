@@ -9,7 +9,7 @@
       "ignition_ca": "SomeCertificateString",
       "lb_cloudscale_api_secret": "${var.lb_cloudscale_api_secret}",
       "region": "rma",
-      "source": "git::https://github.com/appuio/terraform-openshift4-cloudscale.git//?ref=v4.8.4",
+      "source": "git::https://github.com/appuio/terraform-openshift4-cloudscale.git//?ref=v4.8.5",
       "ssh_keys": [
         "ssh-ed25519 AA..."
       ]
