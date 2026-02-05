@@ -19,5 +19,6 @@ parameters:
           - openshift4-terraform/scripts/migrate-state-v2-v3.sh
           - openshift4-terraform/scripts/migrate-state-exoscale-v3-v4.sh
           - openshift4-terraform/scripts/migrate-state-exoscale-v4-v5.py
+          - openshift4-terraform/scripts/migrate-state-exoscale-v9-v10.sh
         input_type: copy
         output_path: openshift4-terraform/

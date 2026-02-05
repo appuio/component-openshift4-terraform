@@ -1,0 +1,157 @@
+= Upgrade Exoscale clusters to component version v10
+
+When upgrading to component version v10 for Exoscale clusters, the following breaking change requires manual changes in the Terraform state of existing clusters:
+
+* https://github.com/appuio/terraform-openshift4-exoscale/pull/116[Remove usage of deprecated field `ssh_key`]
+
+== Prerequisites
+
+You need to be able to execute the following CLI tools locally:
+
+* `docker`
+* `yq` https://github.com/mikefarah/yq[yq YAML processor] (Version 4 or newer)
+* `jq`
+* `vault` https://www.vaultproject.io/docs/commands[Vault CLI]
+* `terraform` https://learn.hashicorp.com/tutorials/terraform/install-cli[Terraform CLI] >= 1.3.0
+
+== Setup environment
+
+. Access to API
++
+[source,bash]
+----
+# For example: https://api.syn.vshn.net
+# IMPORTANT: do NOT add a trailing `/`. Commands below will fail.
+export COMMODORE_API_URL=<lieutenant-api-endpoint>
+
+export CLUSTER_ID=<lieutenant-cluster-id> # Looks like: c-<something>
+export TENANT_ID=$(curl -sH "Authorization: Bearer $(commodore fetch-token)" ${COMMODORE_API_URL}/clusters/${CLUSTER_ID} | jq -r .tenant)
+
+# From https://git.vshn.net/-/profile/personal_access_tokens, "api" scope is sufficient
+export GITLAB_TOKEN=<gitlab-api-token>
+export GITLAB_USER=<gitlab-user-name>
+----
+
+. Connect with Vault
++
+[source,bash]
+----
+export VAULT_ADDR=https://vault-prod.syn.vshn.net
+vault login -method=oidc
+----
+
+== Steps
+
+. Verify that the cluster uses component `openshift4-terraform` v10.
+
+. Get an Exoscale unrestricted API key for the cluster's organization from the https://portal.exoscale.com[Exoscale Console].
++
+[source,bash]
+----
+export EXOSCALE_API_KEY=EXO... <1>
+export EXOSCALE_API_SECRET=... <2>
+----
+<1> Replace with your API key
+<2> Replace with your API secret
++
+TIP: You need the Exoscale credentials so that Terraform can refresh the state.
+
+. Setup Git author information and create the Terraform environment file.
++
+[source,bash]
+----
+export GIT_AUTHOR_NAME=$(git config --global author.name)
+export GIT_AUTHOR_EMAIL=$(git config --global author.email)
+
+cat <<EOF > ./terraform.env
+EXOSCALE_API_KEY
+EXOSCALE_API_SECRET
+HIERADATA_REPO_TOKEN
+GIT_AUTHOR_NAME
+GIT_AUTHOR_EMAIL
+EOF
+----
+
+. Setup Terraform
++
+.Prepare Terraform execution environment
+[source,bash]
+----
+# Set terraform image and tag to be used
+tf_image=$(\
+  yq eval ".parameters.openshift4_terraform.images.terraform.image" \
+  dependencies/openshift4-terraform/class/defaults.yml)
+tf_tag=$(\
+  yq eval ".parameters.openshift4_terraform.images.terraform.tag" \
+  dependencies/openshift4-terraform/class/defaults.yml)
+
+# Generate the terraform alias
+base_dir=$(pwd)
+alias terraform='touch .terraformrc; docker run -it --rm \
+  -e REAL_UID=$(id -u) \
+  -e TF_CLI_CONFIG_FILE=/tf/.terraformrc \
+  --env-file ${base_dir}/terraform.env \
+  -w /tf \
+  -v $(pwd):/tf \
+  --ulimit memlock=-1 \
+  "${tf_image}:${tf_tag}" /tf/terraform.sh'
+
+export GITLAB_REPOSITORY_URL=$(curl -sH "Authorization: Bearer $(commodore fetch-token)" ${COMMODORE_API_URL}/clusters/${CLUSTER_ID} | jq -r '.gitRepo.url' | sed 's|ssh://||; s|/|:|')
+export GITLAB_REPOSITORY_NAME=${GITLAB_REPOSITORY_URL##*/}
+export GITLAB_CATALOG_PROJECT_ID=$(curl -sH "Authorization: Bearer ${GITLAB_TOKEN}" "https://git.vshn.net/api/v4/projects?simple=true&search=${GITLAB_REPOSITORY_NAME/.git}" | jq -r ".[] | select(.ssh_url_to_repo == \"${GITLAB_REPOSITORY_URL}\") | .id")
+export GITLAB_STATE_URL="https://git.vshn.net/api/v4/projects/${GITLAB_CATALOG_PROJECT_ID}/terraform/state/cluster"
+
+pushd catalog/manifests/openshift4-terraform/
+----
++
+[IMPORTANT]
+====
+The migration script doesn't use the `terraform` alias configured here.
+Please make sure that you've got a Terraform binary available locally (see also section <<Prerequisites>>).
+====
++
+.Initialize Terraform
+[source,bash]
+----
+terraform init \
+  "-backend-config=address=${GITLAB_STATE_URL}" \
+  "-backend-config=lock_address=${GITLAB_STATE_URL}/lock" \
+  "-backend-config=unlock_address=${GITLAB_STATE_URL}/lock" \
+  "-backend-config=username=${GITLAB_USER}" \
+  "-backend-config=password=${GITLAB_TOKEN}" \
+  "-backend-config=lock_method=POST" \
+  "-backend-config=unlock_method=DELETE" \
+  "-backend-config=retry_wait_min=5"
+----
+
+. Migrate the Terraform state
++
+TIP: We need to remove and import all the `exoscale_compute_instance` resources in order for the state to be updated in such a way that the Exoscale Terraform provider understands that there's no actual changes.
++
+.Run the migration script
+[source,bash]
+----
+./migrate-state-exoscale-v9-v10.sh
+----
++
+.Verify state using `plan`
+[source,bash]
+----
+terraform plan
+----
++
+You can expect the following changes:
++
+* The LB hieradata repo will be checked out
+* The LB hieradata will get created
+* All the `exoscale_compute_instance` resources will need to be updated with the `private` and `private_network_ids` fields in the state.
+This isn't a "real" change, but somehow these fields get lost when removing the resources from the state and importing them again.
+
+. Apply the changes
++
+TIP: This migration shouldn't generate a hieradata update, if there is one, check it carefully before deciding whether to merge it.
++
+[source,bash]
+----
+terraform apply
+----
