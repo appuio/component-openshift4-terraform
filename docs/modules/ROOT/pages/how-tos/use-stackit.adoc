@@ -1,0 +1,58 @@
+= Use STACKIT
+
+IMPORTANT: Currently the Terraform module which this component uses for STACKIT only supports provisioning VSHN-managed OCP4 clusters on STACKIT.
+
+NOTE: See https://kb.vshn.ch/oc4/how-tos/stackit/install.html[the STACKIT installation how-to] for a comprehensive how-to for setting up OCP4 on STACKIT.
+
+The following steps show how to set up Terraform with STACKIT.
+
+NOTE: The component currently assumes that the Git repositories live on a GitLab instance.
+
+== Setup credentials
+
+. Set up a new Service Account in your STACKIT project and assign it the Editor role.
+. Create a Service Account Token for this Service Account and export it as `STACKIT_SERVICE_ACCOUNT_TOKEN`.
++
+
+== Setup component
+
+. Configure component parameters
++
+[source,yaml]
+----
+openshift4_terraform:
+  provider: stackit
+  terraform_variables:
+    # Required parameters
+    base_domain: ${openshift:baseDomain}
+    ignition_ca: |-
+      -----BEGIN CERTIFICATE-----
+      ...
+    ssh_key: ssh-ed25519 AA...
+    stackit_project_id: SOME-UUID <1>
+    image_id: SOME-UUID <2>
+
+    # Optional parameters:
+    worker_count: 3
+    worker_size: Extra-large
+----
+<1> ID of the STACKIT project in which to deploy the cluster.
+Can be found in the STACKIT web UI.
+<2> UUID of the boot disk image to use for nodes.
+You'll need to manually upload an appropriate boot image to your project.
+Please refer to https://docs.stackit.cloud/stackit/en/how-to-use-custom-images-with-the-iaas-api-305529563.html[the STACKIT documentation].
+
+. Compile the cluster catalog
+. Generate a Service Account Keypair on stackit
++
+[source,bash]
+----
+export SA_EMAIL="YOUR_SERVICE_ACCOUNT_EMAIL"
+
+stackit service-account key create --email "$SA_EMAIL" > service_account_key.json
+----
+. Configure the cluster catalog GitLab repository CI/CD
+  - "Settings > CI/CD > General pipelines > Configuration file" +
+    `manifests/openshift4-terraform/gitlab-ci.yml`
+  - "Settings > CI/CD > Variables"
+    * `STACKIT_SERVICE_ACCOUNT_KEY` -- File type variable containing the contents of a STACKIT service account key JSON file.
