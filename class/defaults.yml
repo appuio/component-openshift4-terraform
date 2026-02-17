@@ -4,7 +4,7 @@ parameters:
       multi_tenant: false
     =_tf_module_version:
       cloudscale: v4.8.5
-      exoscale: v8.0.1
+      exoscale: v8.0.2
       stackit: v0.1.0
     images:
       terraform:
