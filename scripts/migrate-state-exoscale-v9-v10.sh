@@ -22,8 +22,8 @@ do
   res=$(echo "$item" |cut -d';' -f1)
   uuid=$(echo "$item" | cut -d';' -f2)
 
-  echo terraform state rm "$res"
-  echo terraform import "$res" "${uuid}@${zone}"
+  terraform state rm "$res"
+  terraform import "$res" "${uuid}@${zone}"
 done
 
 rm state.json
