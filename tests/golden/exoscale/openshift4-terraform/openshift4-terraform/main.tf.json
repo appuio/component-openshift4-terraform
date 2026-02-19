@@ -9,7 +9,7 @@
       "ignition_ca": "SomeCertificateString",
       "region": "ch-dk-2",
       "rhcos_template": "my-iso-image",
-      "source": "git::https://github.com/appuio/terraform-openshift4-exoscale.git//?ref=v8.0.1",
+      "source": "git::https://github.com/appuio/terraform-openshift4-exoscale.git//?ref=v8.0.2",
       "ssh_key": "ssh-ed25519 AA..."
     }
   }
