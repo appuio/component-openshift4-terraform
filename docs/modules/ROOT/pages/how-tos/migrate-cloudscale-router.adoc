@@ -79,6 +79,14 @@ floaty_key=$(vault kv get \
 export TF_VAR_lb_cloudscale_api_secret=$(echo $floaty_key | jq -r '.data.data.iam_secret')
 ----
 
+. Set Git user info for Terraform
++
+[source,bash]
+----
+export GIT_AUTHOR_NAME=$(git config --global user.name)
+export GIT_AUTHOR_EMAIL=$(git config --global user.email)
+----
+
 . Compile the cluster catalog to create a local working directory
 +
 [source,bash]
