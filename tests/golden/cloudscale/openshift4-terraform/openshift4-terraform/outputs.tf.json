@@ -6,6 +6,15 @@
     "additional-worker-machinesets_yml": {
       "value": "${module.cluster.additional-worker-machinesets_yml}"
     },
+    "api_int_vip": {
+      "value": "${module.cluster.api_int_vip}"
+    },
+    "api_lb_uuid": {
+      "value": "${module.cluster.api_lb_uuid}"
+    },
+    "api_vip": {
+      "value": "${module.cluster.api_vip}"
+    },
     "cluster_dns": {
       "value": "${module.cluster.dns_entries}"
     },
