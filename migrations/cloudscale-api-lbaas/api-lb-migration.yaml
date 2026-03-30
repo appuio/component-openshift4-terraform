@@ -1,0 +1,497 @@
+steps:
+  - match: Given I have all prerequisites installed
+    description: |-
+      This step checks if all necessary prerequisites are installed on your system,
+      including 'yq' (version 4 or higher, by Mike Farah) and 'oc' (OpenShift CLI).
+    run: |
+      set -euo pipefail
+      echo "Checking prerequisites..."
+
+      if which yq >/dev/null 2>&1 ; then { echo "✅ yq is installed."; } ; else { echo "❌ yq is not installed. Please install yq to proceed."; exit 1; } ; fi
+      if yq --version | grep -E 'version v[4-9]\.' | grep 'mikefarah' >/dev/null 2>&1 ; then { echo "✅ yq by mikefarah version 4 or higher is installed."; } ; else { echo "❌ yq version 4 or higher is required. Please upgrade yq to proceed."; exit 1; } ; fi
+
+      if which jq >/dev/null 2>&1 ; then { echo "✅ jq is installed."; } ; else { echo "❌ jq is not installed. Please install jq to proceed."; exit 1; } ; fi
+
+      if which oc >/dev/null 2>&1 ; then { echo "✅ oc (OpenShift CLI) is installed."; } ; else { echo "❌ oc (OpenShift CLI) is not installed. Please install oc to proceed."; exit 1; } ; fi
+
+      if which vault >/dev/null 2>&1 ; then { echo "✅ vault (HashiCorp Vault) is installed."; } ; else { echo "❌ vault (HashiCorp Vault) is not installed. Please install vault to proceed."; exit 1; } ; fi
+
+      if which curl >/dev/null 2>&1 ; then { echo "✅ curl is installed."; } ; else { echo "❌ curl is not installed. Please install curl to proceed."; exit 1; } ; fi
+
+      if which docker >/dev/null 2>&1 ; then { echo "✅ docker is installed."; } ; else { echo "❌ docker is not installed. Please install docker to proceed."; exit 1; } ; fi
+
+      if which glab >/dev/null 2>&1 ; then { echo "✅ glab (GitLab CLI) is installed."; } ; else { echo "❌ glab (GitLab CLI) is not installed. Please install glab to proceed."; exit 1; } ; fi
+
+      if which host >/dev/null 2>&1 ; then { echo "✅ host (DNS lookup utility) is installed."; } ; else { echo "❌ host (DNS lookup utility) is not installed. Please install host to proceed."; exit 1; } ; fi
+
+      if which commodore >/dev/null 2>&1 ; then { echo "✅ commodore (Project Syn) is installed."; } ; else { echo "❌ commodore (Project Syn) is not installed. Please install it with 'uv tool install syn-commodore && commodore tool install --missing' ."; exit 1; } ; fi
+
+      echo "✅ All prerequisites are met."
+
+  - match: And a lieutenant cluster ID
+    description: |-
+      This step retrieves the Commodore tenant ID associated with the given lieutenant cluster ID.
+
+      Use https://api.syn.vshn.net as the Commodore API URL for production clusters.
+
+      This step checks that you have access to the Commodore API and the cluster ID is valid.
+    inputs:
+      - name: commodore_api_url
+        description: |-
+          URL of the Commodore API to use for retrieving cluster information.
+
+          Use https://api.syn.vshn.net as the Commodore API URL for production clusters.
+          Use https://api-int.syn.vshn.net for test clusters.
+
+      - name: commodore_cluster_id
+        description: |-
+          Project Syn cluster ID for the cluster to migrate
+
+          In the form of c-example-infra-prod1.
+    outputs:
+      - name: commodore_tenant_id
+      - name: vault_url
+    run: |
+      set -euo pipefail
+      export COMMODORE_API_URL="${INPUT_commodore_api_url}"
+
+      echo "Setting Vault URL ..."
+      if [[ "${COMMODORE_API_URL}" == "https://api.syn.vshn.net"* ]]; then
+        env -i "vault_url=https://vault-prod.syn.vshn.net" >> "$OUTPUT"
+      elif [[ "${COMMODORE_API_URL}" == "https://api-int.syn.vshn.net"* ]]; then
+        env -i "vault_url=https://vault-int.syn.vshn.net" >> "$OUTPUT"
+      else
+        echo "❌ Unkown Commodore API URL ${COMMODORE_API_URL}"
+        exit 1
+      fi
+
+      echo "Retrieving Commodore tenant ID for cluster ID '$INPUT_commodore_cluster_id' from API at '$INPUT_commodore_api_url'..."
+      tenant_id=$(curl -sH "Authorization: Bearer $(commodore fetch-token)" ${COMMODORE_API_URL}/clusters/${INPUT_commodore_cluster_id} | jq -r .tenant)
+      if echo "$tenant_id" | grep 't-' >/dev/null 2>&1 ; then { echo "✅ Retrieved tenant ID '$tenant_id' for cluster ID '$INPUT_commodore_cluster_id'."; } else { echo "❌ Failed to retrieve valid tenant ID for cluster ID '$INPUT_commodore_cluster_id'. Got '$tenant_id'. Please check your Commodore API access and cluster ID."; exit 1; } ; fi
+      env -i "commodore_tenant_id=$tenant_id" >> "$OUTPUT"
+
+      region=$(curl -sH "Authorization: Bearer $(commodore fetch-token)" ${COMMODORE_API_URL}/clusters/${INPUT_commodore_cluster_id} | jq -r .facts.region)
+      if test -z "$region" && test "$region" != "null" ; then { echo "❌ Failed to retrieve CSP region for cluster ID '$INPUT_commodore_cluster_id'."; exit 1; } ; else { echo "✅ Retrieved CSP region '$region' for cluster ID '$INPUT_commodore_cluster_id'."; } ; fi
+
+  - match: Then I compile the cluster catalog
+    description: |-
+      Compile the catalog and read base domain from inventory
+    inputs:
+      - name: commodore_api_url
+      - name: commodore_cluster_id
+    outputs:
+      - name: cluster_domain
+    run: |
+      set -euo pipefail
+      export COMMODORE_API_URL=${INPUT_commodore_api_url}
+      commodore catalog compile ${INPUT_commodore_cluster_id}
+      env -i "cluster_domain=$(kapitan inventory -t cluster --inventory-backend=reclass-rs | yq .parameters.openshift.baseDomain)" >> "$OUTPUT"
+
+  - match: And I login to the target cluster
+    description: |-
+      Login to the target cluster with `oc login --web`
+
+      This step may not work out of the box when running the workflow in the `guided-setup` docker container.
+    inputs:
+      - name: commodore_cluster_id
+      - name: cluster_domain
+    run: |
+      set -euo pipefail
+
+      API_URL="https://api.${INPUT_cluster_domain}:6443"
+      export KUBECONFIG="./.${INPUT_commodore_cluster_id}.kubeconfig"
+      oc login --web --server "${API_URL}"
+      if ! oc cluster-info; then
+        echo "❌ 'oc cluster-info' returned an error."
+        echo ""
+        echo "Exit the workflow, make sure to point kubectl/oc to the cluster you want to migrate and retry"
+        exit 1
+      fi
+
+  - match: And I fetch the cluster cloudscale token from Vault
+    description: |-
+      Read cluster cloudscale API token from vault
+    inputs:
+      - name: commodore_cluster_id
+      - name: commodore_tenant_id
+      - name: vault_url
+    outputs:
+      - name: cloudscale_token
+      - name: cloudscale_token_floaty
+    run: |
+      set -euo pipefail
+      echo "Fetching cloudscale token from Vault ..."
+      export VAULT_ADDR=${INPUT_vault_url}
+      vault login -method=oidc
+      cloudscale_token=$(vault kv get -format=json \
+        "clusters/kv/${INPUT_commodore_tenant_id}/${INPUT_commodore_cluster_id}/cloudscale")
+      env -i "cloudscale_token=$(echo $cloudscale_token | jq -r '.data.data.token')" >> "$OUTPUT"
+      floaty_key=$(vault kv get -format=json \
+        "clusters/kv/${INPUT_commodore_tenant_id}/${INPUT_commodore_cluster_id}/floaty")
+      env -i "cloudscale_token_floaty=$(echo $floaty_key | jq -r '.data.data.iam_secret')" >> "$OUTPUT"
+
+  - match: And a personal VSHN GitLab access token
+    description: |-
+      This step ensures that you have provided a personal access token for VSHN GitLab.
+
+      Create the token at https://git.vshn.net/-/user_settings/personal_access_tokens with the "api" scope.
+
+      This step currently does not validate the token's scope.
+    inputs:
+      - name: gitlab_api_token
+        description: |-
+          Personal access token for VSHN GitLab with the "api" scope.
+
+          Create the token at https://git.vshn.net/-/user_settings/personal_access_tokens with the "api" scope.
+    outputs:
+      - name: gitlab_user_name
+        description: |-
+          Your GitLab user name.
+    run: |
+      set -euo pipefail
+      user="$( curl -sH "Authorization: Bearer ${INPUT_gitlab_api_token}" "https://git.vshn.net/api/v4/user" | jq -r .username )"
+      if [[ "$user" == "null" ]]
+      then
+        echo "Error validating GitLab token. Are you sure it is valid?"
+        exit 1
+      fi
+      env -i "gitlab_user_name=$user" >> "$OUTPUT"
+      echo "Token is valid."
+
+  - match: And I retrieve the LB FQDNs from the Terraform state
+    description: |-
+      Extract the LB FQDNs from the Terraform state
+    inputs:
+      - name: cloudscale_token
+      - name: cloudscale_token_floaty
+      - name: gitlab_user_name
+      - name: gitlab_api_token
+      - name: commodore_cluster_id
+      - name: commodore_api_url
+      - name: cluster_domain
+    outputs:
+      - name: lb_fqdn_1
+      - name: lb_fqdn_2
+    run: |
+      set -euo pipefail
+
+      source ${migration_dir:-.}/terraform.sh
+
+      pushd catalog/manifests/openshift4-terraform/
+
+      terraform init \
+        "-backend-config=address=${gitlab_state_url}" \
+        "-backend-config=lock_address=${gitlab_state_url}/lock" \
+        "-backend-config=unlock_address=${gitlab_state_url}/lock" \
+        "-backend-config=username=${INPUT_gitlab_user_name}" \
+        "-backend-config=password=${INPUT_gitlab_api_token}" \
+        "-backend-config=lock_method=POST" \
+        "-backend-config=unlock_method=DELETE" \
+        "-backend-config=retry_wait_min=5"
+
+      terraform refresh
+
+      lb1=$(terraform state show "module.cluster.module.lb.cloudscale_server.lb[0]" | grep fqdn | awk '{print $2}' | tr -d ' "\r\n')
+      lb2=$(terraform state show "module.cluster.module.lb.cloudscale_server.lb[1]" | grep fqdn | awk '{print $2}' | tr -d ' "\r\n')
+
+      env -i "lb_fqdn_1=$lb1" >> "$OUTPUT"
+      env -i "lb_fqdn_2=$lb2" >> "$OUTPUT"
+
+  - match: Then I set a downtime for the LBs in Icinga2
+    description: |-
+      Set a downtime for the LBs in Icinga2 (monitoring.vshn.net).
+
+      The script tries to open the link in your browser.
+      If that doesn't work, see the step output for a link. Make sure to copy
+      the full link (you may need to decrease your terminal font size).
+    inputs:
+      - name: lb_fqdn_1
+      - name: lb_fqdn_2
+    run: |
+      set -euo pipefail
+
+      # NOTE(sg): This assumes that if we're running in a container, it's the
+      # appuio/guided-setup container.
+      if [[ -v BROWSER ]]; then
+        open="$BROWSER"
+      elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        open="xdg-open"
+      elif [[ "$OSTYPE" == "darwin"* ]]; then
+        open="open"
+      else
+        echo "Unknown OS type $OSTYPE, falling back to 'echo' ..."
+        open="/bin/echo"
+      fi
+
+      downtime_link="https://monitoring.vshn.net/icingadb/hosts/scheduleDowntime?host.name=${INPUT_lb_fqdn_1}|host.name=${INPUT_lb_fqdn_2}"
+      echo "Opening Icinga2 downtime creation dialog in browser ..."
+      echo ""
+      if [[ ! -v BROWSER ]]; then
+        echo "Trying to open ${downtime_link} in browser"
+        echo ""
+      fi
+      "$open" "https://monitoring.vshn.net/icingadb/hosts/scheduleDowntime?host.name=${INPUT_lb_fqdn_1}|host.name=${INPUT_lb_fqdn_2}"
+
+  - match: And I set a silence on the cluster
+    description: |-
+      Silence all alerts on the cluster (except for the "Watchdog" alert)
+    inputs:
+      - name: gitlab_user_name
+      - name: commodore_cluster_id
+    outputs:
+      - name: silence_id
+    run: |
+      set -euo pipefail
+      echo "Silencing all alerts on the cluster ..."
+      export KUBECONFIG="./.${INPUT_commodore_cluster_id}.kubeconfig"
+      silence_id=$(oc --as=system:admin -n openshift-monitoring exec sts/alertmanager-main -- \
+        amtool --alertmanager.url=http://localhost:9093 silence add 'alertname!=Watchdog' \
+        --comment "API LB Migration" --author "${INPUT_gitlab_user_name} via Gandalf migration workflow")
+      env -i "silence_id=${silence_id}" >> "$OUTPUT"
+
+  - match: And I disable Puppet on the LBs
+    description: |-
+      Disable Puppet on the LBs.
+    inputs:
+      - name: lb_fqdn_1
+      - name: lb_fqdn_2
+    run: |
+      set -euo pipefail
+      echo "Disabling Puppet on ${INPUT_lb_fqdn_1} ..."
+      ssh ${INPUT_lb_fqdn_1} sudo puppetctl stop "API LB Migration"
+      echo "Disabling Puppet on ${INPUT_lb_fqdn_2} ..."
+      ssh ${INPUT_lb_fqdn_2} sudo puppetctl stop "API LB Migration"
+
+
+  - match: And I enable the API LB creation in Terraform
+    description: |-
+      Enable Terraform-managed cloudscale LB for API in cluster catalog.
+    inputs:
+      - name: commodore_cluster_id
+      - name: commodore_tenant_id
+    run: |
+      set -euo pipefail
+
+      echo "Setting Terraform variable `enable_api_lbaas=true` for ${INPUT_commodore_cluster_id} ..."
+      pushd inventory/classes/${INPUT_commodore_tenant_id}
+      # sequence of commands to preserve blank spaces etc
+      yq '.parameters.openshift4_terraform.terraform_variables.enable_api_lbaas=true' \
+        "${INPUT_commodore_cluster_id}.yml" > "${INPUT_commodore_cluster_id}.tmp.yml"
+      patch=$(diff -U0 -w -B c-alde-ocp1686.yml c-alde-ocp1686.tmp.yml || true)
+      patch -p0 <<< "$patch"
+      rm ${INPUT_commodore_cluster_id}.tmp.yml
+      git commit -a -m "Migrate ${INPUT_commodore_cluster_id} API to cloudscale LB"
+      git push
+
+  - match: And I compile the cluster catalog
+    description: |-
+      Compile the cluster catalog after enabling the API cloudscale LB instance
+    inputs:
+      - name: commodore_api_url
+      - name: commodore_cluster_id
+    run: |
+      set -euo pipefail
+      export COMMODORE_API_URL=${INPUT_commodore_api_url}
+      commodore catalog compile ${INPUT_commodore_cluster_id} --push
+
+  - match: Then I move the API VIP in the Terraform state
+    description: |-
+      Move the existing cloudscale floating IP for the API to the new resource
+    inputs:
+      - name: cloudscale_token
+      - name: cloudscale_token_floaty
+      - name: gitlab_user_name
+      - name: gitlab_api_token
+      - name: commodore_cluster_id
+      - name: commodore_api_url
+      - name: cluster_domain
+    outputs:
+      - name: api_vip
+      - name: api_int_vip
+    run: |
+      set -euo pipefail
+      source "${migration_dir:-.}/terraform.sh"
+      pushd catalog/manifests/openshift4-terraform
+
+      terraform init \
+        "-backend-config=address=${gitlab_state_url}" \
+        "-backend-config=lock_address=${gitlab_state_url}/lock" \
+        "-backend-config=unlock_address=${gitlab_state_url}/lock" \
+        "-backend-config=username=${INPUT_gitlab_user_name}" \
+        "-backend-config=password=${INPUT_gitlab_api_token}" \
+        "-backend-config=lock_method=POST" \
+        "-backend-config=unlock_method=DELETE" \
+        "-backend-config=retry_wait_min=5"
+
+      terraform state mv "module.cluster.module.lb.cloudscale_floating_ip.api_vip[0]" "module.cluster.cloudscale_floating_ip.api_v4"
+      env -i "api_vip=$(terraform output -raw api_vip)" >> "$OUTPUT"
+      env -i "api_int_vip=$(terraform output -raw api_int_vip)" >> "$OUTPUT"
+
+
+  - match: And I remove the API VIP from the Floaty and Keepalived config on the LBs
+    description: |-
+      Remove API floating IP from Floaty config and internal API VIP from Keepalived config.
+
+      Note that there may be some alerts until the internal API VIP cloudscale LB instance is ready.
+    inputs:
+      - name: lb_fqdn_1
+      - name: lb_fqdn_2
+      - name: api_vip
+      - name: api_int_vip
+    run: |
+      set -euo pipefail
+      for lb in ${INPUT_lb_fqdn_1} ${INPUT_lb_fqdn_2}; do
+        echo "Removing ${INPUT_api_vip} on ${lb} ..."
+        ssh ${lb} sudo sed -i "/${INPUT_api_vip}/d" /etc/floaty/global.yaml
+        echo "Removing ${INPUT_api_int_vip} on ${lb} ..."
+        ssh ${lb} sudo sed -i "/${INPUT_api_int_vip}/d" /etc/keepalived/keepalived.conf
+        echo "Restarting keepalived on ${lb} ..."
+        ssh ${lb} sudo systemctl restart keepalived
+      done
+
+  - match: Then I run Terraform to provision the API and API-INT LB instances
+    description: |-
+      Run Terraform to provision the cloudscale LB instances.
+
+      Note that the cloudscale LBaaS API is sometimes slightly flaky. If the `terraform apply` fails, it should be safe to retry this step.
+
+      If the `terraform apply` fails with an error such as "Error creating LoadBalancerListener: detail: A listener with protocol tcp and protocol_port 6443 already exists",
+      check if the resource actually exists in the cloudscale API with `curl` and import it with `terraform import` if it exists.
+
+      If the resource doesn't exist in the API, delete the LB instance for which the error was raised via control.cloudscale.ch and retry the step.
+    inputs:
+      - name: cloudscale_token
+      - name: cloudscale_token_floaty
+      - name: gitlab_user_name
+      - name: gitlab_api_token
+      - name: commodore_cluster_id
+      - name: commodore_api_url
+      - name: cluster_domain
+    outputs:
+      - name: api_lb_uuid
+      - name: use_existing_vips
+    run: |
+      set -euo pipefail
+      source "${migration_dir:-.}/terraform.sh"
+      pushd catalog/manifests/openshift4-terraform
+      terraform apply -auto-approve
+      env -i "api_lb_uuid=$(terraform output -raw api_lb_uuid)" >> "$OUTPUT"
+      env -i "use_existing_vips=$(jq -r '.module.cluster.use_existing_vips//false' main.tf.json)" >> "$OUTPUT"
+
+      has_mr=$(terraform output -json hieradata_mr | jq -r '.[0]')
+
+      if [[ "$has_mr" != "No changes, skipping push and MR creation"* ]]; then
+      echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+      echo "@                                                                                       @"
+      echo "@  Please review and merge the LB hieradata MR listed in Terraform output hieradata_mr. @"
+      echo "@                                                                                       @"
+      echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+      while (GITLAB_HOST=git.vshn.net GITLAB_TOKEN="${INPUT_gitlab_api_token}" glab mr list -R=appuio/appuio_hieradata | grep "${INPUT_commodore_cluster_id}")
+      do
+        sleep 10
+      done
+      echo PR merged, waiting for CI to finish...
+      sleep 10
+      while (GITLAB_HOST=git.vshn.net GITLAB_TOKEN="${INPUT_gitlab_api_token}" glab mr list -R=appuio/appuio_hieradata | grep "running")
+      do
+        sleep 10
+      done
+      else
+      echo "No LB hieradata MR"
+      fi
+
+      terraform output -raw cluster_dns > ../../../dns.txt
+      echo "API AAAA DNS record:"
+      terraform output -raw cluster_dns | grep 'api' | grep 'IN AAAA'
+      echo ""
+      echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+      echo "@                                                                         @"
+      echo "@  Please add the AAAA API DNS record shown above to your DNS provider.   @"
+      echo "@  Most probably in https://git.vshn.net/vshn/vshn_zonefiles              @"
+      echo "@                                                                         @"
+      echo "@  If terminal selection does not work the entry can also be copied from  @"
+      echo "@    dns.txt                                                              @"
+      echo "@                                                                         @"
+      echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+      rm ../../../dns.txt
+
+  - match: Then I attach the API floating IP to the API LB instance
+    description: |-
+      For clusters that use externally provisioned cloudscale floating IPs, we
+      need to manually update the API floating IP to point to the API cloudscale
+      LBaaS instance.
+    inputs:
+      - name: commodore_cluster_id
+      - name: cloudscale_token
+      - name: api_vip
+      - name: api_lb_uuid
+      - name: use_existing_vips
+    run: |
+      set -euo pipefail
+
+      if [ "${INPUT_use_existing_vips}" == "true" ]; then
+        echo "Cluster ${INPUT_commodore_cluster_id} uses externally provisioned floating IPs, attaching ${INPUT_api_vip} to cloudscale LB ${INPUT_api_lb_uuid} ..."
+        curl -H "Authorization: Bearer ${INPUT_cloudscale_token}" -XPATCH \
+          -F "load_balancer=${INPUT_api_lb_uuid}" \
+          "https://api.cloudscale.ch/v1/floating-ips/${INPUT_api_vip}"
+      else
+        echo "Cluster ${INPUT_commodore_cluster_id} doesn't use externally provisioned floating IPs, skipping ..."
+      fi
+
+  - match: And I enable Puppet on the LBs
+    description: |-
+      Enable Puppet on the LBs
+    inputs:
+      - name: lb_fqdn_1
+      - name: lb_fqdn_2
+    run: |
+      set -euo pipefail
+      ssh ${INPUT_lb_fqdn_1} sudo puppetctl start
+      ssh ${INPUT_lb_fqdn_2} sudo puppetctl start
+
+  - match: And I expire the Alertmanager silence
+    description: |-
+      Expire the alertmanager silence
+    inputs:
+      - name: silence_id
+      - name: commodore_cluster_id
+    run: |
+      set -euo pipefail
+
+      export KUBECONFIG="./.${INPUT_commodore_cluster_id}.kubeconfig"
+      oc --as=system:admin -n openshift-monitoring exec sts/alertmanager-main -- \
+        amtool --alertmanager.url=http://localhost:9093 silence expire "${INPUT_silence_id}"
+
+  - match: And finally I remove the downtime in Icinga2
+    description: |-
+      Remove the downtime for the LBs in Icinga2 (monitoring.vshn.net).
+
+      The script tries to open a link to each LB in your browser.
+      If that doesn't work, see the step output for the links. Make sure to
+      copy the full link (you may need to decrease your terminal font size).
+    inputs:
+      - name: lb_fqdn_1
+      - name: lb_fqdn_2
+    run: |
+      set -euo pipefail
+
+      # NOTE(sg): This assumes that if we're running in a container, it's the
+      # appuio/guided-setup container.
+      if [[ -v BROWSER ]]; then
+        open="$BROWSER"
+      elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        open="xdg-open"
+      elif [[ "$OSTYPE" == "darwin"* ]]; then
+        open="open"
+      else
+        echo "Unknown OS type $OSTYPE, falling back to 'echo' ..."
+        open="/bin/echo"
+      fi
+
+      for lb_fqdn in "${INPUT_lb_fqdn_1}" "${INPUT_lb_fqdn_2}"; do
+        icinga_link="https://monitoring.vshn.net/icingadb/host?name=${lb_fqdn}"
+        if [[ ! -v BROWSER ]]; then
+          echo "Trying to open ${icinga_link} in browser"
+        fi
+        "$open" "${icinga_link}"
+      done
