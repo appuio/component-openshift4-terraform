@@ -61,6 +61,9 @@ local outputs = {
     'additional-worker-machinesets_yml': '${module.cluster.additional-worker-machinesets_yml}',
     subnet_uuid: '${module.cluster.subnet_uuid}',
     router_vip: '${module.cluster.router_vip}',
+    api_vip: '${module.cluster.api_vip}',
+    api_lb_uuid: '${module.cluster.api_lb_uuid}',
+    api_int_vip: '${module.cluster.api_int_vip}',
   },
   exoscale: common_outputs {
     hieradata_mr: '${module.cluster.hieradata_mr}',
