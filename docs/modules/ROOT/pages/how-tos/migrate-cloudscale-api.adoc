@@ -1,0 +1,62 @@
+= Migrate the API floating IP from Puppet LBs to cloudscale LBaaS
+
+[abstract]
+This how-to is for migrating the API floating IP of a cloudscale cluster from the Puppet LBs to cloudscale LBaaS instances.
+
+== Prerequisites
+
+The migration procedure is implemented as a Gandalf workflow.
+You need to be able to run https://github.com/appuio/gandalf/[Gandalf] locally.
+Both a local installation and the https://github.com/appuio/guided-setup/[guided-setup] container image should work.
+
+NOTE: So far, the workflow has only been tested on Linux with a local Gandalf installation.
+
+
+== Migration
+
+. Run Commodore to setup a working directory for the cluster to migrate
++
+[TIP]
+====
+We recommend running this in an empty directory.
+Alternatively, you can use an existing Commodore working directory for the cluster you want to migrate.
+====
++
+[source,bash]
+----
+export CLUSTER_ID=c-the-cluster-to-migrate-1234
+commodore catalog compile $CLUSTER_ID
+----
+
+. Set and export the `migration_dir` environment variable which the workflow uses internally.
++
+[source,bash]
+----
+export migration_dir=\
+./dependencies/openshift4-terraform/migrations/cloudscale-api-lbaas <1>
+----
+<1> This assumes that your current working directory is the Commodore working directory for the cluster to migrate
+
+. Run Gandalf
++
+[NOTE]
+====
+For clusters which are located behind a SOCKS5 proxy, the workflow steps which try to access the cluster may not work correctly unless you set the `https_proxy` variable manually.
+====
++
+.Local Gandalf
+[source,bash]
+----
+gandalf run "${migration_dir}/api-lb-migration.workflow" \
+  "${migration_dir}/api-lb-migration.yaml"
+----
++
+.Guided-setup container image
+[source,bash]
+----
+guided-setup-base -e "migration_dir=${migration_dir}" \
+  run "${migration_dir}/api-lb-migration.workflow" \
+  "${migration_dir}/api-lb-migration.yaml"
+----
++
+TIP: The `guided-setup-base` alias is defined in `docker/aliases.sh` in the https://github.com/appuio/guided-setup/[appuio/guided-setup] repository.
