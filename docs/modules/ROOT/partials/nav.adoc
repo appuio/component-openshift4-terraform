@@ -15,6 +15,7 @@
 * xref:how-tos/migrate-from-openshift4-cloudscale.adoc[Migrate from component `openshift4-cloudscale`]
 * xref:how-tos/migrate-cloudscale-router.adoc[Migrate the cloudscale router floating IP to cloudscale LBaaS]
 * xref:how-tos/migrate-cloudscale-api.adoc[Migrate the cloudscale API floating IP to cloudscale LBaaS]
+* xref:how-tos/configure-cloudscale-router-ipv6.adoc[]
 
 .Technical reference
 * xref:references/parameters.adoc[Parameters]
