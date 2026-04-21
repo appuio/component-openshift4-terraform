@@ -125,7 +125,7 @@ spells:
       # Inspired by https://github.com/mikefarah/yq/issues/515#issuecomment-830380295
       yq '.parameters.openshift4_terraform.terraform_variables.enable_api_lbaas=true' \
         "${INPUT_commodore_cluster_id}.yml" > "${INPUT_commodore_cluster_id}.tmp.yml"
-      patch=$(diff -U0 -w -B c-alde-ocp1686.yml c-alde-ocp1686.tmp.yml || true)
+      patch=$(diff -U0 -w -B ${INPUT_commodore_cluster_id}.yml ${INPUT_commodore_cluster_id}.tmp.yml || true)
       patch -p0 <<< "$patch"
       rm ${INPUT_commodore_cluster_id}.tmp.yml
       git commit -a -m "Migrate ${INPUT_commodore_cluster_id} API to cloudscale LB"
