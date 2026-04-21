@@ -48,7 +48,7 @@ For clusters which are located behind a SOCKS5 proxy, the workflow steps which t
 [source,bash]
 ----
 gandalf run "${migration_dir}/api-lb-migration.workflow" \
-  "${migration_dir}/api-lb-migration.yaml"
+  ${migration_dir}/*.yaml
 ----
 +
 .Guided-setup container image
@@ -56,7 +56,7 @@ gandalf run "${migration_dir}/api-lb-migration.workflow" \
 ----
 guided-setup-base -e "migration_dir=${migration_dir}" \
   run "${migration_dir}/api-lb-migration.workflow" \
-  "${migration_dir}/api-lb-migration.yaml"
+  ${migration_dir}/*.yaml
 ----
 +
 TIP: The `guided-setup-base` alias is defined in `docker/aliases.sh` in the https://github.com/appuio/guided-setup/[appuio/guided-setup] repository.
