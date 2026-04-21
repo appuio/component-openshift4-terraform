@@ -1,12 +1,16 @@
-steps:
+spells:
   - match: And I retrieve the LB FQDNs from the Terraform state
     description: |-
       Extract the LB FQDNs from the Terraform state
     inputs:
       - name: cloudscale_token
+        type: sensitive
       - name: cloudscale_token_floaty
+        type: sensitive
       - name: gitlab_user_name
+        type: local
       - name: gitlab_api_token
+        type: local-sensitive
       - name: commodore_cluster_id
       - name: commodore_api_url
       - name: cluster_domain
@@ -16,7 +20,7 @@ steps:
     run: |
       set -euo pipefail
 
-      source "${migration_dir:-.}/terraform.sh"
+      source "${GANDALF_SPELLBOOK_DIR}/terraform.sh"
 
       pushd catalog/manifests/openshift4-terraform/
 
@@ -78,6 +82,7 @@ steps:
       Silence all alerts on the cluster (except for the "Watchdog" alert)
     inputs:
       - name: gitlab_user_name
+        type: local
       - name: commodore_cluster_id
     outputs:
       - name: silence_id
@@ -142,9 +147,13 @@ steps:
       Move the existing cloudscale floating IP for the API to the new resource
     inputs:
       - name: cloudscale_token
+        type: sensitive
       - name: cloudscale_token_floaty
+        type: sensitive
       - name: gitlab_user_name
+        type: local
       - name: gitlab_api_token
+        type: local-sensitive
       - name: commodore_cluster_id
       - name: commodore_api_url
       - name: cluster_domain
@@ -153,7 +162,7 @@ steps:
       - name: api_int_vip
     run: |
       set -euo pipefail
-      source "${migration_dir:-.}/terraform.sh"
+      source "${GANDALF_SPELLBOOK_DIR}/terraform.sh"
       pushd catalog/manifests/openshift4-terraform
 
       terraform init \
@@ -204,9 +213,13 @@ steps:
       If the resource doesn't exist in the API, delete the LB instance for which the error was raised via control.cloudscale.ch and retry the step.
     inputs:
       - name: cloudscale_token
+        type: sensitive
       - name: cloudscale_token_floaty
+        type: sensitive
       - name: gitlab_user_name
+        type: local
       - name: gitlab_api_token
+        type: local-sensitive
       - name: commodore_cluster_id
       - name: commodore_api_url
       - name: cluster_domain
@@ -215,7 +228,7 @@ steps:
       - name: use_existing_vips
     run: |
       set -euo pipefail
-      source "${migration_dir:-.}/terraform.sh"
+      source "${GANDALF_SPELLBOOK_DIR}/terraform.sh"
       pushd catalog/manifests/openshift4-terraform
       terraform apply -auto-approve
       env -i "api_lb_uuid=$(terraform output -raw api_lb_uuid)" >> "$OUTPUT"
@@ -266,6 +279,7 @@ steps:
     inputs:
       - name: commodore_cluster_id
       - name: cloudscale_token
+        type: sensitive
       - name: api_vip
       - name: api_lb_uuid
       - name: use_existing_vips

@@ -1,4 +1,4 @@
-steps:
+spells:
   - match: Given I have all prerequisites installed
     description: |-
       This step checks if all necessary prerequisites are installed on your system,
@@ -117,7 +117,9 @@ steps:
       - name: vault_url
     outputs:
       - name: cloudscale_token
+        type: sensitive
       - name: cloudscale_token_floaty
+        type: sensitive
     run: |
       set -euo pipefail
       echo "Fetching cloudscale token from Vault ..."
@@ -139,12 +141,14 @@ steps:
       This step currently does not validate the token's scope.
     inputs:
       - name: gitlab_api_token
+        type: local-sensitive
         description: |-
           Personal access token for VSHN GitLab with the "api" scope.
 
           Create the token at https://git.vshn.net/-/user_settings/personal_access_tokens with the "api" scope.
     outputs:
       - name: gitlab_user_name
+        type: local
         description: |-
           Your GitLab user name.
     run: |

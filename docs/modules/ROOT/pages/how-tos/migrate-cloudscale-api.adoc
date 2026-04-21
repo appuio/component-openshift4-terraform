@@ -9,6 +9,8 @@ The migration procedure is implemented as a Gandalf workflow.
 You need to be able to run https://github.com/appuio/gandalf/[Gandalf] locally.
 Both a local installation and the https://github.com/appuio/guided-setup/[guided-setup] container image should work.
 
+IMPORTANT: The minimum required Gandalf version is v0.1.0.
+
 NOTE: So far, the workflow has only been tested on Linux with a local Gandalf installation.
 
 
@@ -28,7 +30,7 @@ export CLUSTER_ID=c-the-cluster-to-migrate-1234
 commodore catalog compile $CLUSTER_ID
 ----
 
-. Set and export the `migration_dir` environment variable which the workflow uses internally.
+. Set the `migration_dir` environment variable so that the subsequent `gandalf` invocation is shorter.
 +
 [source,bash]
 ----
