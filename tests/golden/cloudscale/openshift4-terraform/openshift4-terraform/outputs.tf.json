@@ -39,6 +39,9 @@
     "router_vip": {
       "value": "${module.cluster.router_vip}"
     },
+    "router_vip_v6": {
+      "value": "${module.cluster.router_vip_v6}"
+    },
     "subnet_uuid": {
       "value": "${module.cluster.subnet_uuid}"
     },

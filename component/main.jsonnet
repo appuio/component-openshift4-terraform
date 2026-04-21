@@ -61,6 +61,7 @@ local outputs = {
     'additional-worker-machinesets_yml': '${module.cluster.additional-worker-machinesets_yml}',
     subnet_uuid: '${module.cluster.subnet_uuid}',
     router_vip: '${module.cluster.router_vip}',
+    router_vip_v6: '${module.cluster.router_vip_v6}',
     api_vip: '${module.cluster.api_vip}',
     api_lb_uuid: '${module.cluster.api_lb_uuid}',
     api_int_vip: '${module.cluster.api_int_vip}',
