@@ -1,11 +1,11 @@
-= Migrate the API floating IP from Puppet LBs to cloudscale LBaaS
+= Configure an IPv6 floating IP for the ingress router on cloudscale
 
 [abstract]
-This how-to is for migrating the API floating IP of a cloudscale cluster from the Puppet LBs to cloudscale LBaaS instances.
+This how-to provides instructions for configuring an IPv6 floating ip for the ingress router of an existing cloudscale OpenShift 4 cluster.
 
 == Prerequisites
 
-The migration procedure is implemented as a Gandalf workflow.
+The how-to is implemented as a Gandalf workflow.
 You need to be able to run https://github.com/appuio/gandalf/[Gandalf] locally.
 Both a local installation and the https://github.com/appuio/guided-setup/[guided-setup] container image should work.
 
@@ -14,7 +14,7 @@ IMPORTANT: The minimum required Gandalf version is v0.1.0.
 NOTE: So far, the workflow has only been tested on Linux with a local Gandalf installation.
 
 
-== Migration
+== Configuration
 
 . Run Commodore to setup a working directory for the cluster to migrate
 +
@@ -35,7 +35,7 @@ commodore catalog compile $CLUSTER_ID
 [source,bash]
 ----
 export migration_dir=\
-./dependencies/openshift4-terraform/migrations/cloudscale-api-lbaas <1>
+./dependencies/openshift4-terraform/migrations/cloudscale-router-v6 <1>
 ----
 <1> This assumes that your current working directory is the Commodore working directory for the cluster to migrate
 
@@ -49,7 +49,7 @@ For clusters which are located behind a SOCKS5 proxy, the workflow steps which t
 .Local Gandalf
 [source,bash]
 ----
-gandalf run "${migration_dir}/api-lb-migration.workflow" \
+gandalf run "${migration_dir}/configure-router-v6.workflow" \
   ${migration_dir}/*.yaml
 ----
 +
@@ -57,7 +57,7 @@ gandalf run "${migration_dir}/api-lb-migration.workflow" \
 [source,bash]
 ----
 guided-setup-base -e "migration_dir=${migration_dir}" \
-  run "${migration_dir}/api-lb-migration.workflow" \
+  run "${migration_dir}/configure-router-v6.workflow" \
   ${migration_dir}/*.yaml
 ----
 +

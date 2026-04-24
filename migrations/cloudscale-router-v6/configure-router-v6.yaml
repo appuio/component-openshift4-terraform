@@ -1,0 +1,85 @@
+spells:
+  - match: Then I run Terraform to provision the ingress router IPv6 floating IP
+    description: |
+      This step runs Terraform to provision the IPv6 floating IP for the ingress router.
+
+      Additionally, the step instructs the user to configure the cluster's ingress AAAA record.
+    inputs:
+      - name: cloudscale_token
+        type: sensitive
+      - name: cloudscale_token_floaty
+        type: sensitive
+      - name: gitlab_user_name
+        type: local
+      - name: gitlab_api_token
+        type: local-sensitive
+      - name: commodore_cluster_id
+      - name: commodore_api_url
+    outputs:
+      - name: router_vip_v6
+    run: |
+      set -euo pipefail
+      source "${GANDALF_SPELLBOOK_DIR}/terraform.sh"
+      pushd catalog/manifests/openshift4-terraform
+
+      terraform init \
+        "-backend-config=address=${gitlab_state_url}" \
+        "-backend-config=lock_address=${gitlab_state_url}/lock" \
+        "-backend-config=unlock_address=${gitlab_state_url}/lock" \
+        "-backend-config=username=${INPUT_gitlab_user_name}" \
+        "-backend-config=password=${INPUT_gitlab_api_token}" \
+        "-backend-config=lock_method=POST" \
+        "-backend-config=unlock_method=DELETE" \
+        "-backend-config=retry_wait_min=5"
+
+      terraform apply -auto-approve
+
+      env -i "router_vip_v6=$(terraform output -raw router_vip_v6)" >> "$OUTPUT"
+
+      terraform output -raw cluster_dns > ../../../dns.txt
+      echo "Ingress AAAA DNS record:"
+      terraform output -raw cluster_dns | grep 'ingress' | grep 'IN AAAA'
+      echo ""
+      echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+      echo "@                                                                             @"
+      echo "@  Please add the AAAA Ingress DNS record shown above to your DNS provider.   @"
+      echo "@  Most probably in https://git.vshn.net/vshn/vshn_zonefiles                  @"
+      echo "@                                                                             @"
+      echo "@  If terminal selection does not work the entry can also be copied from      @"
+      echo "@    dns.txt                                                                  @"
+      echo "@                                                                             @"
+      echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+      rm ../../../dns.txt
+
+  - match: And I configure the ingress router IPv6 floating IP in the tenant repo
+    description: |
+      This step configures the IPv6 floating IP for the ingress router in {{ .commodore_cluster_id }}.yml in the tenant repo and pushes the change.
+
+      The step assumes that the tenant repo CI will actually roll out the change.
+    inputs:
+      - name: commodore_cluster_id
+      - name: commodore_tenant_id
+      - name: router_vip_v6
+    run: |
+      set -x
+      pushd "inventory/classes/${INPUT_commodore_tenant_id}"
+      yq ".parameters.openshift.cloudscale.ingress_floating_ip_v6=\"${INPUT_router_vip_v6}\"" \
+        "${INPUT_commodore_cluster_id}.yml" > "${INPUT_commodore_cluster_id}.tmp.yml"
+      patch=$(diff -U0 -w -B ${INPUT_commodore_cluster_id}.yml ${INPUT_commodore_cluster_id}.tmp.yml || true)
+      patch -p0 <<< "$patch"
+      rm ${INPUT_commodore_cluster_id}.tmp.yml
+      git commit -a -m "Configure router IPv6 floating IP for ${INPUT_commodore_cluster_id}"
+      git push
+
+  - match: And finally I wait for the ingress router IPv6 floating IP to be attached to the cloudscale LB
+    description: |
+      Wait until the IPv6 floating IP configuration is deployed on the cluster via ArgoCD.
+    inputs:
+      - name: commodore_cluster_id
+    run: |
+      export KUBECONFIG="./.${INPUT_commodore_cluster_id}.kubeconfig"
+      while [ "$(kubectl -n appuio-cloudscale-loadbalancer-controller \
+                get loadbalancer ingress -oyaml | \
+                yq '.spec.floatingIPAddresses[]|select(.cidr|test("/128$"))')" == "" ]; do
+        echo -n "."
+      done
