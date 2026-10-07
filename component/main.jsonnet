@@ -18,12 +18,6 @@ local input_vars = {
     ignition_bootstrap: {
       default: '',
     },
-    lb_cloudscale_api_secret: {
-      default: '',
-    },
-    control_vshn_net_token: {
-      default: '',
-    },
   },
   exoscale: {
     control_vshn_net_token: {
@@ -50,7 +44,6 @@ local common_outputs = {
 };
 local outputs = {
   cloudscale: common_outputs {
-    hieradata_mr: '${module.cluster.hieradata_mr}',
     'master-machines_yml': '${module.cluster.master-machines_yml}',
     'master-machineset_yml': '${module.cluster.master-machineset_yml}',
     'infra-machines_yml': '${module.cluster.infra-machines_yml}',
